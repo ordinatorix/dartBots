@@ -99,13 +99,13 @@ class Web3Service {
   Future<void> _getAbi() async {
     try {
       final _proxyAbiCode = await _config.proxyAbiFile.readAsString();
-      _proxyContractAbi = ContractAbi.fromJson(
-          _proxyAbiCode, 'InitializableImmutableAdminUpgradeabilityProxy');
+      _proxyContractAbi =
+          ContractAbi.fromJson(_proxyAbiCode, _config.proxyContractName);
 
       final _lendingPoolAbiCode =
           await _config.lendingPoolAbiFile.readAsString();
-      _lendingPoolContractAbi =
-          ContractAbi.fromJson(_lendingPoolAbiCode, 'LendingPool');
+      _lendingPoolContractAbi = ContractAbi.fromJson(
+          _lendingPoolAbiCode, _config.lendingPoolContractName);
     } catch (e) {
       print('error getting abi: $e');
     }
@@ -491,8 +491,7 @@ class Web3Service {
 
   /// Parse withdraw event
   ///
-  AaveWithdrawEvent _parseEventToAaveWithdrawEvent(
-      FilterEvent _withdrawEvent) {
+  AaveWithdrawEvent _parseEventToAaveWithdrawEvent(FilterEvent _withdrawEvent) {
     List _decodedResult;
 
     _decodedResult = contractWithdrawEvent.decodeResults(

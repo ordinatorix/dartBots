@@ -13,6 +13,10 @@ class Config {
   final EthereumAddress lendingPoolContractAddress =
       EthereumAddress.fromHex('0x2646fcf7f0abb1ff279ed9845ade04019c907ebe');
 
+  final String proxyContractName =
+      'InitializableImmutableAdminUpgradeabilityProxy';
+  final String lendingPoolContractName = 'LendingPool';
+
   final File proxyAbiFile = File(
       join(dirname(Platform.script.path), '../lib/abi/aave_proxy.abi.json'));
   final File lendingPoolAbiFile = File(join(
