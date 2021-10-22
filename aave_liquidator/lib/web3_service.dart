@@ -5,7 +5,7 @@ import 'dart:io';
 
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/enums/event_enums.dart';
-import 'package:aave_liquidator/model/aave_widthdraw_event.dart';
+import 'package:aave_liquidator/model/aave_withdraw_event.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:http/http.dart';
 
@@ -39,7 +39,7 @@ class Web3Service {
   late DeployedContract proxyContract;
 
   late ContractEvent contractDepositEvent;
-  late ContractEvent contractWidthdrawEvent;
+  late ContractEvent contractWithdrawEvent;
   late ContractEvent contractBorrowEvent;
   late ContractEvent contractRepayEvent;
   late ContractFunction getUserAccountDataFunction;
@@ -128,7 +128,7 @@ class Web3Service {
 
       /// setup contract events
       contractDepositEvent = lendingPoolContract.event('Deposit');
-      contractWidthdrawEvent = lendingPoolContract.event('Widthdraw');
+      contractWithdrawEvent = lendingPoolContract.event('Withdraw');
       contractBorrowEvent = lendingPoolContract.event('Borrow');
       contractRepayEvent = lendingPoolContract.event('Repay');
 
@@ -266,8 +266,8 @@ class Web3Service {
     }
   }
 
-  /// query widthdraw event
-  Future<List<AaveWidthdrawEvent>> queryWidthdrawEvent(
+  /// query withdraw event
+  Future<List<AaveWithdrawEvent>> queryWithdrawEvent(
       {int? fromBlock, int? toBlock}) async {
     print('querying repay event');
     try {
@@ -277,15 +277,15 @@ class Web3Service {
           fromBlock: fromBlock != null ? BlockNum.exact(fromBlock) : null,
           toBlock: toBlock != null ? BlockNum.exact(toBlock) : null,
           topics: [
-            [_config.encodedWidthdrawEventTopic]
+            [_config.encodedWithdrawEventTopic]
           ]);
-      List<FilterEvent> _widthdrawEvent = await _web3Client.getLogs(_filter);
+      List<FilterEvent> _withdrawEvent = await _web3Client.getLogs(_filter);
 
-      return _widthdrawEvent
-          .map((e) => _parseEventToAaveWidthdrawEvent(e))
+      return _withdrawEvent
+          .map((e) => _parseEventToAaveWithdrawEvent(e))
           .toList();
     } catch (e) {
-      print('error querying widthdraw event: $e');
+      print('error querying withdraw event: $e');
       return [];
     }
   }
@@ -435,8 +435,8 @@ class Web3Service {
     });
   }
 
-  /// listen for widthdraw event
-  _listenForWidthdrawEvent() {
+  /// listen for withdraw event
+  _listenForWithdrawEvent() {
     // TODO: implement
   }
 
@@ -489,24 +489,24 @@ class Web3Service {
     return parsedRepayEvent;
   }
 
-  /// Parse widthdraw event
+  /// Parse withdraw event
   ///
-  AaveWidthdrawEvent _parseEventToAaveWidthdrawEvent(
-      FilterEvent _widthdrawEvent) {
+  AaveWithdrawEvent _parseEventToAaveWithdrawEvent(
+      FilterEvent _withdrawEvent) {
     List _decodedResult;
 
-    _decodedResult = contractWidthdrawEvent.decodeResults(
-        _widthdrawEvent.topics!, _widthdrawEvent.data!);
+    _decodedResult = contractWithdrawEvent.decodeResults(
+        _withdrawEvent.topics!, _withdrawEvent.data!);
 
-    // print('decoded widthdraw event: $_decodedResult');
-    final parsedWidthdrawEvent = AaveWidthdrawEvent(
+    // print('decoded withdraw event: $_decodedResult');
+    final parsedWithdrawEvent = AaveWithdrawEvent(
       reserve: _decodedResult[0].toString(),
       userAddress: _decodedResult[1].toString(),
       to: _decodedResult[2].toString(),
       amount: double.parse(_decodedResult[3].toString()),
     );
-    // print(parsedWidthdrawEvent);
-    return parsedWidthdrawEvent;
+    // print(parsedWithdrawEvent);
+    return parsedWithdrawEvent;
   }
 
   /// parse user data
