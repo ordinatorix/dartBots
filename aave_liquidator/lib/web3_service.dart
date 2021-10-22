@@ -288,7 +288,7 @@ class Web3Service {
           .map((e) => _parseEventToAaveWithdrawEvent(e))
           .toList();
     } catch (e) {
-      log.d('error querying withdraw event: $e');
+      log.e('error querying withdraw event: $e');
       return [];
     }
   }
@@ -300,7 +300,7 @@ class Web3Service {
       if (userList.isEmpty) {
         throw 'no user given';
       }
-      log.d('getting user account data of ${userList.length} users');
+      log.i('getting user account data of ${userList.length} users');
       List<String> _aaveUserList = [];
 
       /// iterate throught the list of users and get their user account data.
@@ -333,14 +333,14 @@ class Web3Service {
 
       return _aaveUserList;
     } catch (e) {
-      log.d('error getting user account data: $e');
+      log.e('error getting user account data: $e');
       return [];
     }
   }
 
   /// get user configuration from aave
   Future<List> _getAaveUserConfig(EthereumAddress aaveUser) async {
-    log.d('getting user config');
+    log.v('getting user config');
     try {
       final rawUserConfigList = await _web3Client.call(
           contract: proxyContract,
@@ -445,7 +445,7 @@ class Web3Service {
 
   /// parse borrow event data and topics
   AaveBorrowEvent _parseEventToAaveBorrowEvent(FilterEvent _borrowEvent) {
-    log.d('parsing borrow event');
+    log.v('parsing borrow event');
     final List _decodedResult = contractBorrowEvent.decodeResults(
         _borrowEvent.topics!, _borrowEvent.data!);
 
@@ -463,7 +463,7 @@ class Web3Service {
 
 // parse deposit event data and topics
   AaveDepositEvent _parseEventToAaveDepositEvent(FilterEvent _depositEvent) {
-    log.d('parsing deposit event');
+    log.v('parsing deposit event');
     final List _decodedResult = contractDepositEvent.decodeResults(
         _depositEvent.topics!, _depositEvent.data!);
 
@@ -480,7 +480,7 @@ class Web3Service {
   /// Parse repay event
   ///
   AaveRepayEvent _parseEventToAaveRepayEvent(FilterEvent _repayEvent) {
-    log.d('parsing repay event');
+    log.v('parsing repay event');
     final List _decodedResult = contractRepayEvent.decodeResults(
         _repayEvent.topics!, _repayEvent.data!);
 
@@ -497,7 +497,7 @@ class Web3Service {
   /// Parse withdraw event
   ///
   AaveWithdrawEvent _parseEventToAaveWithdrawEvent(FilterEvent _withdrawEvent) {
-    log.d('parsing withdraw event');
+    log.v('parsing withdraw event');
     List _decodedResult;
 
     _decodedResult = contractWithdrawEvent.decodeResults(
@@ -521,7 +521,7 @@ class Web3Service {
     required List userAccountData,
     required List userConfig,
   }) {
-    log.i('parsing user data');
+    log.v('parsing user data');
     List<List<String>> _userReserves = _mixAndMatch(userConfig);
     final parsedUserAccountData = AaveUserAccountData(
       userAddress: userAddress.toString(),
@@ -540,6 +540,7 @@ class Web3Service {
 
   /// write user data to file
   _writeToStorage(String contents) async {
+    log.i('writing to storage');
     try {
       await File(_config.storageFilename)
           .writeAsString(contents, mode: FileMode.append);
@@ -550,7 +551,7 @@ class Web3Service {
 
   /// format user data to write to file
   List<List<String>> _mixAndMatch(List pairList) {
-    log.i('mix and match');
+    log.v('mix and match');
 
     /// for each reserve pair in the list,
     /// if the reserve pair is "10"
