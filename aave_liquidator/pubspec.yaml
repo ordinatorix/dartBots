@@ -13,6 +13,7 @@ dependencies:
   web_socket_channel: ^2.1.0 # used to communicated with the network.
   web3dart: ^2.3.1 # for interacting with web3
   path: ^1.8.0 # A comprehensive, cross-platform path manipulation library for Dart.
+  logger: ^1.1.0
   
 
 dev_dependencies:
