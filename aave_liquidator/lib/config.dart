@@ -34,9 +34,6 @@ class Config {
       dirname(Platform.script.path),
       '../lib/abi/aave_protocol_data_provider.abi.json'));
 
-  /// user data storage file
-  final storageFilename = 'lib/storage.json';
-
   /// Encoded topics
   final String encodedBorrowEventTopic =
       '0xc6a898309e823ee50bac64e45ca8adba6690e99e7841c45d754e2a38e9019d9b';
@@ -54,4 +51,7 @@ class Config {
   /// Currently the close factor is 0.5. In other words, liquidators can only liquidate a
   /// maximum of 50% of the amount pending to be repaid in a position.
   final double closeFactor = 0.5;
+
+  /// user data storage file
+  final storageFilename = 'lib/storage.json';
 }

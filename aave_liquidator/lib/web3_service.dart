@@ -396,7 +396,7 @@ class Web3Service {
     }
   }
 
-//listen for borrow events
+  ///listen for borrow events
   _listenForBorrowEvents() {
     log.i('listenning for borrow event');
     final options = FilterOptions(
@@ -410,7 +410,7 @@ class Web3Service {
     });
   }
 
-// listen for deposit events
+  /// listen for deposit events
   _listenForDepositEvent() {
     log.i('listenning for deposit event');
     final options = FilterOptions(
@@ -425,6 +425,7 @@ class Web3Service {
     });
   }
 
+  /// listenf for repay event
   _listenForRepayEvent() {
     log.i('listenning for repay event');
     final options = FilterOptions(
