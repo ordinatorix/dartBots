@@ -1,10 +1,10 @@
-class AaveWidthdrawEvent {
+class AaveWithdrawEvent {
   String reserve;
   String userAddress;
   String to;
   double amount;
 
-  AaveWidthdrawEvent({
+  AaveWithdrawEvent({
     required this.reserve,
     required this.userAddress,
     required this.to,
@@ -13,6 +13,6 @@ class AaveWidthdrawEvent {
 
   @override
   String toString() {
-    return 'WidthdrawalEvent:\n Reserve:$reserve;\n User: $userAddress;\n onBehalfOf: $to;\n Amount: $amount.';
+    return 'WithdrawalEvent:\n Reserve:$reserve;\n User: $userAddress;\n onBehalfOf: $to;\n Amount: $amount.';
   }
 }

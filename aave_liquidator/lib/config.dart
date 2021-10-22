@@ -13,6 +13,10 @@ class Config {
   final EthereumAddress lendingPoolContractAddress =
       EthereumAddress.fromHex('0x2646fcf7f0abb1ff279ed9845ade04019c907ebe');
 
+  final String proxyContractName =
+      'InitializableImmutableAdminUpgradeabilityProxy';
+  final String lendingPoolContractName = 'LendingPool';
+
   final File proxyAbiFile = File(
       join(dirname(Platform.script.path), '../lib/abi/aave_proxy.abi.json'));
   final File lendingPoolAbiFile = File(join(
@@ -27,7 +31,7 @@ class Config {
       '0xde6857219544bb5b7746f48ed30be6386fefc61b2f864cacf559893bf50fd951';
   final String encodedRepayEventTopic =
       '0x4cdde6e09bb755c9a5589ebaec640bbfedff1362d4b255ebf8339782b9942faa';
-  final String encodedWidthdrawEventTopic =
+  final String encodedWithdrawEventTopic =
       '0x3115d1449a7b732c986cba18244e897a450f61e1bb8d589cd2e69e6c8924f9f7';
 
   /// minimum health factor to take interest in. value is in wei
