@@ -1,5 +1,6 @@
 // ignore_for_file: avoid_log.
 
+// TODO: autogenerate cantract function with builder
 import 'dart:convert';
 import 'dart:io';
 
@@ -100,6 +101,8 @@ class Web3Service {
   }
 
   /// get ABI
+  /// TODO: import data provider abi
+  ///
   Future<void> _getAbi() async {
     try {
       final _proxyAbiCode = await _config.proxyAbiFile.readAsString();
@@ -116,6 +119,7 @@ class Web3Service {
   }
 
   /// setup contracts
+  /// TODO: setup data provider contract and used functions/events
   _setupContracts() async {
     log.i('setting up contract');
     try {
@@ -396,6 +400,8 @@ class Web3Service {
     }
   }
 
+  ///TODO: get user reserve data.
+
   ///listen for borrow events
   _listenForBorrowEvents() {
     log.i('listenning for borrow event');
@@ -443,6 +449,9 @@ class Web3Service {
   _listenForWithdrawEvent() {
     // TODO: implement
   }
+
+  /// listen for liquidation call events
+  /// TODO:
 
   /// parse borrow event data and topics
   AaveBorrowEvent _parseEventToAaveBorrowEvent(FilterEvent _borrowEvent) {
@@ -516,7 +525,6 @@ class Web3Service {
   }
 
   /// parse user data
-
   AaveUserAccountData _parseUserAccountData({
     required EthereumAddress userAddress,
     required List userAccountData,
@@ -538,6 +546,9 @@ class Web3Service {
 
     return parsedUserAccountData;
   }
+
+  /// parse user reserve data
+  /// TODO:
 
   /// write user data to file
   _writeToStorage(String contents) async {
