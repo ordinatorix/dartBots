@@ -58,11 +58,11 @@ class Web3Service {
     await _setupContracts();
     aaveReserveList = await getAaveReserveList();
 
-    queriedBorrowEvent = await queryBorrowEvent(fromBlock: -50);
+    queriedBorrowEvent = await queryBorrowEvent(fromBlock: 20647300);
     userFromEvents = _extractUserFromBorrowEvent(queriedBorrowEvent);
-    queriedDepositEvent = await queryDepositEvent(fromBlock: -50);
-    queriedRepayEvent = await queryRepayEvent(fromBlock: -50);
-    queriedWithdrawEvent = await queryWithdrawEvent(fromBlock: -50);
+    queriedDepositEvent = await queryDepositEvent(fromBlock: 20647300);
+    queriedRepayEvent = await queryRepayEvent(fromBlock: 20647300);
+    queriedWithdrawEvent = await queryWithdrawEvent(fromBlock: 20647300);
     log.d(
         'borrow event: $queriedBorrowEvent; deposit: $queriedDepositEvent; repay: $queriedRepayEvent; withdraw: $queriedWithdrawEvent');
     List<String> userDataList =
