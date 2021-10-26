@@ -1,11 +1,10 @@
 // ignore_for_file: avoid_log.
 
-// TODO: autogenerate cantract function with builder
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:aave_liquidator/abi/aave_protocol_data_provider.g.dart';
 import 'package:aave_liquidator/config.dart';
-import 'package:aave_liquidator/enums/event_enums.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_withdraw_event.dart';
 import 'package:dotenv/dotenv.dart';
@@ -36,19 +35,23 @@ class Web3Service {
 
   late CredentialsWithKnownAddress credentials;
 
-  late ContractAbi _lendingPoolContractAbi;
   late ContractAbi _proxyContractAbi;
+  late ContractAbi _lendingPoolContractAbi;
+  // late ContractAbi _protocolDataProviderAbi;
 
   late DeployedContract lendingPoolContract;
   late DeployedContract proxyContract;
+  late Aave_protocol_data_provider protocolDataProviderContract;
 
   late ContractEvent contractDepositEvent;
   late ContractEvent contractWithdrawEvent;
   late ContractEvent contractBorrowEvent;
   late ContractEvent contractRepayEvent;
+
+  late ContractFunction getReserveList;
   late ContractFunction getUserAccountDataFunction;
   late ContractFunction getUserConfiguration;
-  late ContractFunction getReserveList;
+  late ContractFunction getUserReserveData;
 
   late List<AaveBorrowEvent> queriedBorrowEvent;
   late List<AaveDepositEvent> queriedDepositEvent;
@@ -59,9 +62,9 @@ class Web3Service {
   _initWeb3Client() async {
     await _connectViaRpcApi();
     _getCredentials();
-
     await _setupContracts();
     aaveReserveList = await getAaveReserveList();
+
     queriedBorrowEvent = await queryBorrowEvent(fromBlock: 27858000);
     userFromEvents = _extractUserFromBorrowEvent(queriedBorrowEvent);
     // queriedDepositEvent = await queryDepositEvent(fromBlock: 27647000);
@@ -101,25 +104,33 @@ class Web3Service {
   }
 
   /// get ABI
-  /// TODO: import data provider abi
   ///
   Future<void> _getAbi() async {
     try {
+      /// read proxy abi
       final _proxyAbiCode = await _config.proxyAbiFile.readAsString();
       _proxyContractAbi =
           ContractAbi.fromJson(_proxyAbiCode, _config.proxyContractName);
 
+      /// read lending pool abi
       final _lendingPoolAbiCode =
           await _config.lendingPoolAbiFile.readAsString();
       _lendingPoolContractAbi = ContractAbi.fromJson(
           _lendingPoolAbiCode, _config.lendingPoolContractName);
+
+      // /// read protocol data provider abi
+      // final _protocolDataProviderAbiCode =
+      //     await _config.protocolDataProviderAbiFile.readAsString();
+      // _protocolDataProviderAbi = ContractAbi.fromJson(
+      //     _protocolDataProviderAbiCode,
+      //     _config.protocolDataProviderContractName);
     } catch (e) {
       log.e('error getting abi: $e');
     }
   }
 
   /// setup contracts
-  /// TODO: setup data provider contract and used functions/events
+
   _setupContracts() async {
     log.i('setting up contract');
     try {
@@ -133,6 +144,16 @@ class Web3Service {
         _lendingPoolContractAbi,
         _config.lendingPoolContractAddress,
       );
+
+      // lendingPoolContract = Aave_lending_pool(
+      //     address: _config.lendingPoolProxyContractAddress,
+      //     client: _web3Client,
+      //     chainId: _chainId);
+
+      protocolDataProviderContract = Aave_protocol_data_provider(
+          address: _config.protocolDataProviderContractAddress,
+          client: _web3Client,
+          chainId: _chainId);
 
       /// setup contract events
       contractDepositEvent = lendingPoolContract.event('Deposit');
@@ -329,6 +350,7 @@ class Web3Service {
             userAccountData: userAccountData,
             userConfig: _userConfig,
           );
+          getAaveUserReserveData(_userData);
 
           String jsonEncodedUserData = jsonEncode(_userData);
           _aaveUserList.add(jsonEncodedUserData);
@@ -401,6 +423,21 @@ class Web3Service {
   }
 
   ///TODO: get user reserve data.
+  /// Get user reserve data from aave
+  getAaveUserReserveData(AaveUserAccountData userData) async {
+    log.i('getAaveUserReserveData | userData: $userData');
+    try {
+      late var userReserveData;
+      for (final collateral in userData.collateralReserve) {
+        print(collateral);
+        userReserveData = await protocolDataProviderContract.getUserReserveData(
+            EthereumAddress.fromHex(collateral),
+            EthereumAddress.fromHex(userData.userAddress));
+      }
+    } catch (e) {
+      log.e('error getting user reserve data: $e');
+    }
+  }
 
   ///listen for borrow events
   _listenForBorrowEvents() {
@@ -554,8 +591,15 @@ class Web3Service {
   _writeToStorage(String contents) async {
     log.i('writing to storage');
     try {
-      await File(_config.storageFilename)
-          .writeAsString(contents, mode: FileMode.append);
+      if (await File(_config.storageFilename).exists()) {
+        log.v('appending to storage file');
+        await File(_config.storageFilename)
+            .writeAsString(',$contents', mode: FileMode.append);
+      } else {
+        log.v('creating new storage file');
+        await File(_config.storageFilename)
+            .writeAsString(contents, mode: FileMode.append);
+      }
     } catch (e) {
       log.e('error writing to file: $e');
     }

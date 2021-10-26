@@ -15,22 +15,21 @@ class Config {
   final EthereumAddress lendingPoolContractAddress =
       EthereumAddress.fromHex('0x2646fcf7f0abb1ff279ed9845ade04019c907ebe');
 
-  final EthereumAddress aaveProtocolDataProviderContractAddress =
+  final EthereumAddress protocolDataProviderContractAddress =
       EthereumAddress.fromHex('0x3c73A5E5785cAC854D468F727c606C07488a29D6');
 
   /// Contract names
   final String proxyContractName =
       'InitializableImmutableAdminUpgradeabilityProxy';
   final String lendingPoolContractName = 'LendingPool';
-  final String aaveProtocolDataProviderContractName =
-      'AaveProtocolDataProvider';
+  final String protocolDataProviderContractName = 'AaveProtocolDataProvider';
 
   /// ABI file
   final File proxyAbiFile = File(
       join(dirname(Platform.script.path), '../lib/abi/aave_proxy.abi.json'));
   final File lendingPoolAbiFile = File(join(
       dirname(Platform.script.path), '../lib/abi/aave_lending_pool.abi.json'));
-  final File aaveProtocolDataProviderAbiFile = File(join(
+  final File protocolDataProviderAbiFile = File(join(
       dirname(Platform.script.path),
       '../lib/abi/aave_protocol_data_provider.abi.json'));
 
