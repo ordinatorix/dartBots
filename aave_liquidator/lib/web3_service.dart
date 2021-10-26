@@ -36,9 +36,6 @@ class Web3Service {
 
   late CredentialsWithKnownAddress credentials;
 
-  // late ContractAbi _proxyContractAbi;
-  // late ContractAbi _lendingPoolContractAbi;
-
   late Aave_lending_pool lendingPoolContract;
   late DeployedContract proxyContract;
   late Aave_protocol_data_provider protocolDataProviderContract;
@@ -51,6 +48,7 @@ class Web3Service {
   late List<AaveBorrowEvent> queriedBorrowEvent;
   late List<AaveDepositEvent> queriedDepositEvent;
   late List<AaveRepayEvent> queriedRepayEvent;
+  late List<AaveWithdrawEvent> queriedWithdrawEvent;
   List<String> userFromEvents = [];
   List<EthereumAddress> aaveReserveList = [];
 
@@ -60,11 +58,13 @@ class Web3Service {
     await _setupContracts();
     aaveReserveList = await getAaveReserveList();
 
-    queriedBorrowEvent = await queryBorrowEvent(fromBlock: 27858000);
+    queriedBorrowEvent = await queryBorrowEvent(fromBlock: -50);
     userFromEvents = _extractUserFromBorrowEvent(queriedBorrowEvent);
-    // queriedDepositEvent = await queryDepositEvent(fromBlock: 27647000);
-    // queriedRepayEvent = await queryRepayEvent(fromBlock: 27815000);
-
+    queriedDepositEvent = await queryDepositEvent(fromBlock: -50);
+    queriedRepayEvent = await queryRepayEvent(fromBlock: -50);
+    queriedWithdrawEvent = await queryWithdrawEvent(fromBlock: -50);
+    log.d(
+        'borrow event: $queriedBorrowEvent; deposit: $queriedDepositEvent; repay: $queriedRepayEvent; withdraw: $queriedWithdrawEvent');
     List<String> userDataList =
         await getUserAccountData(userList: userFromEvents);
 
@@ -98,31 +98,11 @@ class Web3Service {
     log.d(balance);
   }
 
-  // /// get ABI
-  // ///
-  // Future<void> _getAbi() async {
-  //   try {
-  //     /// read proxy abi
-  //     // final _proxyAbiCode = await _config.proxyAbiFile.readAsString();
-  //     // _proxyContractAbi =
-  //     //     ContractAbi.fromJson(_proxyAbiCode, _config.proxyContractName);
-  //   } catch (e) {
-  //     log.e('error getting abi: $e');
-  //   }
-  // }
-
   /// setup contracts
 
   _setupContracts() async {
     log.i('setting up contract');
     try {
-      // await _getAbi();
-
-      // proxyContract = DeployedContract(
-      //   _proxyContractAbi,
-      //   _config.lendingPoolProxyContractAddress,
-      // );
-
       lendingPoolContract = Aave_lending_pool(
           address: _config.lendingPoolProxyContractAddress,
           client: _web3Client,
@@ -261,7 +241,9 @@ class Web3Service {
           ]);
       List<FilterEvent> _repayEvent = await _web3Client.getLogs(_filter);
 
-      return _repayEvent.map((e) => _parseEventToAaveRepayEvent(e)).toList();
+      return _repayEvent
+          .map((e) => _parseEventToAaveRepayEvent(filterEvent: e))
+          .toList();
     } catch (e) {
       log.e('error querying repay event: $e');
       return [];
@@ -284,7 +266,7 @@ class Web3Service {
       List<FilterEvent> _withdrawEvent = await _web3Client.getLogs(_filter);
 
       return _withdrawEvent
-          .map((e) => _parseEventToAaveWithdrawEvent(e))
+          .map((e) => _parseEventToAaveWithdrawEvent(filterEvent: e))
           .toList();
     } catch (e) {
       log.e('error querying withdraw event: $e');
@@ -392,6 +374,8 @@ class Web3Service {
     }
   }
 
+  /// get user reserve data
+  /// TODO: finish this
   getAaveUserReserveData(AaveUserAccountData userData) async {
     log.v('getAaveUserReserveData | userData: $userData');
     try {
@@ -410,44 +394,40 @@ class Web3Service {
   _listenForBorrowEvents() {
     log.i('listenning for borrow event');
 
-    lendingPoolContract.borrowEvents().listen((borrow) {
-      log.d('new borrow event: $borrow');
-      _parseEventToAaveBorrowEvent(borrow: borrow);
+    lendingPoolContract.borrowEvents().listen((_borrow) {
+      log.d('new borrow event: $_borrow');
+      _parseEventToAaveBorrowEvent(borrow: _borrow);
     });
   }
 
   /// listen for deposit events
   _listenForDepositEvent() {
     log.i('listenning for deposit event');
-    // final options = FilterOptions(
-    //     address: _config.lendingPoolProxyContractAddress,
-    //     topics: [
-    //       [_config.encodedDepositEventTopic]
-    //     ]);
-    lendingPoolContract.depositEvents().listen((deposit) {
-      log.d('new deposit event: $deposit');
 
-      _parseEventToAaveDepositEvent(deposit: deposit);
+    lendingPoolContract.depositEvents().listen((_deposit) {
+      log.d('new deposit event: $_deposit');
+
+      _parseEventToAaveDepositEvent(deposit: _deposit);
     });
   }
 
   /// listenf for repay event
   _listenForRepayEvent() {
     log.i('listenning for repay event');
-    final options = FilterOptions(
-        address: _config.lendingPoolProxyContractAddress,
-        topics: [
-          [_config.encodedRepayEventTopic]
-        ]);
-    _web3Client.events(options).listen((event) {
-      log.d('new repay event');
-      _parseEventToAaveRepayEvent(event);
+
+    lendingPoolContract.repayEvents().listen((_repay) {
+      log.d('new repay event: $_repay');
+      _parseEventToAaveRepayEvent(repay: _repay);
     });
   }
 
   /// listen for withdraw event
   _listenForWithdrawEvent() {
-    // TODO: implement
+    log.i('listenning for withdraw event');
+    lendingPoolContract.withdrawEvents().listen((_withdraw) {
+      log.d('new withdraw event: $_withdraw');
+      _parseEventToAaveWithdrawEvent(withdraw: _withdraw);
+    });
   }
 
   /// listen for liquidation call events
@@ -512,37 +492,57 @@ class Web3Service {
 
   /// Parse repay event
   ///
-  AaveRepayEvent _parseEventToAaveRepayEvent(FilterEvent _repayEvent) {
+  AaveRepayEvent _parseEventToAaveRepayEvent(
+      {Repay? repay, FilterEvent? filterEvent}) {
     log.v('parsing repay event');
-    final List _decodedResult = contractRepayEvent.decodeResults(
-        _repayEvent.topics!, _repayEvent.data!);
+    late AaveRepayEvent parsedRepayEvent;
+    if (filterEvent != null) {
+      final List _decodedResult = contractDepositEvent.decodeResults(
+          filterEvent.topics!, filterEvent.data!);
 
-    final parsedRepayEvent = AaveRepayEvent(
-      reserve: _decodedResult[0].toString(),
-      userAddress: _decodedResult[1].toString(),
-      onBehalfOf: _decodedResult[2].toString(),
-      amount: double.parse(_decodedResult[3].toString()),
-    );
+      parsedRepayEvent = AaveRepayEvent(
+        reserve: _decodedResult[0].toString(),
+        userAddress: _decodedResult[1].toString(),
+        repayer: _decodedResult[2].toString(),
+        amount: double.parse(_decodedResult[3].toString()),
+      );
+    } else {
+      parsedRepayEvent = AaveRepayEvent(
+        reserve: repay!.reserve.toString(),
+        userAddress: repay.user.toString(),
+        repayer: repay.repayer.toString(),
+        amount: repay.amount.toDouble(),
+      );
+    }
 
     return parsedRepayEvent;
   }
 
   /// Parse withdraw event
   ///
-  AaveWithdrawEvent _parseEventToAaveWithdrawEvent(FilterEvent _withdrawEvent) {
-    log.v('parsing withdraw event');
-    List _decodedResult;
+  AaveWithdrawEvent _parseEventToAaveWithdrawEvent(
+      {Withdraw? withdraw, FilterEvent? filterEvent}) {
+    log.d('parsing withdraw event');
+    late AaveWithdrawEvent parsedWithdrawEvent;
+    if (filterEvent != null) {
+      List _decodedResult = contractWithdrawEvent.decodeResults(
+          filterEvent.topics!, filterEvent.data!);
 
-    _decodedResult = contractWithdrawEvent.decodeResults(
-        _withdrawEvent.topics!, _withdrawEvent.data!);
-
-    log.d('decoded withdraw event: $_decodedResult');
-    final parsedWithdrawEvent = AaveWithdrawEvent(
-      reserve: _decodedResult[0].toString(),
-      userAddress: _decodedResult[1].toString(),
-      to: _decodedResult[2].toString(),
-      amount: double.parse(_decodedResult[3].toString()),
-    );
+      log.d('decoded withdraw event: $_decodedResult');
+      parsedWithdrawEvent = AaveWithdrawEvent(
+        reserve: _decodedResult[0].toString(),
+        userAddress: _decodedResult[1].toString(),
+        to: _decodedResult[2].toString(),
+        amount: double.parse(_decodedResult[3].toString()),
+      );
+    } else {
+      parsedWithdrawEvent = AaveWithdrawEvent(
+        reserve: withdraw!.reserve.toString(),
+        userAddress: withdraw.user.toString(),
+        to: withdraw.to.toString(),
+        amount: withdraw.amount.toDouble(),
+      );
+    }
     log.d(parsedWithdrawEvent);
     return parsedWithdrawEvent;
   }
