@@ -5,7 +5,7 @@ import 'package:logger/logger.dart';
 
 void main(List<String> arguments) {
   final log = getLogger('main');
-  Logger.level = Level.info;
+  Logger.level = Level.debug;
   log.v('Success, We\'re In!');
 
   load();
