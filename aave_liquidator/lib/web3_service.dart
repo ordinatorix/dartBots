@@ -136,7 +136,7 @@ class Web3Service {
       return reserveList;
     } catch (e) {
       log.e('error getting aave reserve list: $e');
-      return [];
+      throw 'Could not get aave reserve list.';
     }
   }
 
@@ -201,7 +201,7 @@ class Web3Service {
           .toList();
     } catch (e) {
       log.e('error querying borrow event: $e');
-      return [];
+      throw 'Could not get borrow events';
     }
   }
 
@@ -229,7 +229,7 @@ class Web3Service {
           .toList();
     } catch (e) {
       log.e('error querying deposit event: $e');
-      return [];
+      throw ' Could no get deposit events';
     }
   }
 
@@ -256,7 +256,7 @@ class Web3Service {
           .toList();
     } catch (e) {
       log.e('error querying repay event: $e');
-      return [];
+      throw 'Could not get repay event';
     }
   }
 
@@ -283,7 +283,7 @@ class Web3Service {
           .toList();
     } catch (e) {
       log.e('error querying withdraw event: $e');
-      return [];
+      throw 'Could not get withdraw event';
     }
   }
 
@@ -319,11 +319,11 @@ class Web3Service {
           _aaveUserList.add(jsonEncodedUserData);
         }
       }
-      log.i('Only ${_aaveUserList.length} users at risk of liquidation.');
+      log.i('Found ${_aaveUserList.length} users at risk of liquidation.');
       return _aaveUserList;
     } catch (e) {
       log.e('error getting user account data: $e');
-      return [];
+      throw 'Could not get user account data';
     }
   }
 
@@ -380,12 +380,11 @@ class Web3Service {
       return _userReserveList;
     } catch (e) {
       log.e('error getting user configuration: $e');
-      return [];
+      throw 'could not get user configurations';
     }
   }
 
   /// get user reserve data
-
   Future<AaveUserReserveData> getAaveUserReserveData({
     required EthereumAddress userAddress,
   }) async {
@@ -405,6 +404,8 @@ class Web3Service {
           EthereumAddress.fromHex(collateral),
           userAddress,
         );
+
+        /// get collateral
         _aaveUserReserveData.collateral.update(
           collateral,
           (value) => userReserveData.currentATokenBalance.toDouble(),
@@ -417,11 +418,15 @@ class Web3Service {
           EthereumAddress.fromHex(debt),
           userAddress,
         );
+
+        /// get variable debt
         _aaveUserReserveData.variableDebt.update(
           debt,
           (value) => userReserveData.currentVariableDebt.toDouble(),
           ifAbsent: () => userReserveData.currentVariableDebt.toDouble(),
         );
+
+        /// get stabel debt
         _aaveUserReserveData.stableDebt.update(
           debt,
           (value) => userReserveData.currentStableDebt.toDouble(),
@@ -432,7 +437,7 @@ class Web3Service {
       return _aaveUserReserveData;
     } catch (e) {
       log.e('error getting user reserve data: $e');
-      throw 'noting to show';
+      throw 'error getting user reserve data';
     }
   }
 
