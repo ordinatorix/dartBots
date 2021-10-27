@@ -11,3 +11,4 @@ process flow:
 - on (- %) price change, swap stable;
 - if asset pass threshold => deposit asset into aave;
 
+on sushi, the router is used to query the price and to swap tokens
