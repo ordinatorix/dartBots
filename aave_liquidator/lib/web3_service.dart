@@ -7,6 +7,7 @@ import 'package:aave_liquidator/abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/abi/aave_protocol_data_provider.g.dart';
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/logger.dart';
+// import 'package:aave_liquidator/model/aave_user_reserve_data.dart';
 import 'package:aave_liquidator/model/aave_withdraw_event.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:http/http.dart';
@@ -58,16 +59,16 @@ class Web3Service {
     await _setupContracts();
     aaveReserveList = await getAaveReserveList();
 
-    queriedBorrowEvent = await queryBorrowEvent(fromBlock: 20647300);
+    queriedBorrowEvent = await queryBorrowEvent(fromBlock: 27980000);
     userFromEvents = _extractUserFromBorrowEvent(queriedBorrowEvent);
-    queriedDepositEvent = await queryDepositEvent(fromBlock: 20647300);
-    queriedRepayEvent = await queryRepayEvent(fromBlock: 20647300);
-    queriedWithdrawEvent = await queryWithdrawEvent(fromBlock: 20647300);
-    log.d(
-        'borrow event: $queriedBorrowEvent; deposit: $queriedDepositEvent; repay: $queriedRepayEvent; withdraw: $queriedWithdrawEvent');
+    // queriedDepositEvent = await queryDepositEvent(fromBlock: 27990000);
+    // queriedRepayEvent = await queryRepayEvent(fromBlock: 27990000);
+    // queriedWithdrawEvent = await queryWithdrawEvent(fromBlock: 27990000);
+    // log.v(
+    //     'borrow event: $queriedBorrowEvent; deposit: $queriedDepositEvent; repay: $queriedRepayEvent; withdraw: $queriedWithdrawEvent');
     List<String> userDataList =
         await getUserAccountData(userList: userFromEvents);
-
+//TODO: write to each doc to file instead of a list.
     _writeToStorage(userDataList.toString());
   }
 
@@ -184,8 +185,11 @@ class Web3Service {
       /// create filter
       FilterOptions _filter = FilterOptions(
           address: _config.lendingPoolProxyContractAddress,
-          fromBlock: fromBlock != null ? BlockNum.exact(fromBlock) : null,
-          toBlock: toBlock != null ? BlockNum.exact(toBlock) : null,
+          fromBlock: fromBlock != null
+              ? BlockNum.exact(fromBlock)
+              : BlockNum.current(),
+          toBlock:
+              toBlock != null ? BlockNum.exact(toBlock) : BlockNum.current(),
           topics: [
             [_config.encodedBorrowEventTopic]
           ]);
@@ -210,8 +214,11 @@ class Web3Service {
       /// create filter
       FilterOptions _filter = FilterOptions(
           address: _config.lendingPoolProxyContractAddress,
-          fromBlock: fromBlock != null ? BlockNum.exact(fromBlock) : null,
-          toBlock: toBlock != null ? BlockNum.exact(toBlock) : null,
+          fromBlock: fromBlock != null
+              ? BlockNum.exact(fromBlock)
+              : BlockNum.current(),
+          toBlock:
+              toBlock != null ? BlockNum.exact(toBlock) : BlockNum.current(),
           topics: [
             [_config.encodedDepositEventTopic]
           ]);
@@ -234,8 +241,11 @@ class Web3Service {
       /// create filter
       FilterOptions _filter = FilterOptions(
           address: _config.lendingPoolProxyContractAddress,
-          fromBlock: fromBlock != null ? BlockNum.exact(fromBlock) : null,
-          toBlock: toBlock != null ? BlockNum.exact(toBlock) : null,
+          fromBlock: fromBlock != null
+              ? BlockNum.exact(fromBlock)
+              : BlockNum.current(),
+          toBlock:
+              toBlock != null ? BlockNum.exact(toBlock) : BlockNum.current(),
           topics: [
             [_config.encodedRepayEventTopic]
           ]);
@@ -258,8 +268,11 @@ class Web3Service {
       /// create filter
       FilterOptions _filter = FilterOptions(
           address: _config.lendingPoolProxyContractAddress,
-          fromBlock: fromBlock != null ? BlockNum.exact(fromBlock) : null,
-          toBlock: toBlock != null ? BlockNum.exact(toBlock) : null,
+          fromBlock: fromBlock != null
+              ? BlockNum.exact(fromBlock)
+              : BlockNum.current(),
+          toBlock:
+              toBlock != null ? BlockNum.exact(toBlock) : BlockNum.current(),
           topics: [
             [_config.encodedWithdrawEventTopic]
           ]);
@@ -286,9 +299,7 @@ class Web3Service {
 
       /// iterate throught the list of users and get their user account data.
       for (var user in userList) {
-        EthereumAddress? _userAddress;
-        List _userConfig = [];
-        _userAddress = EthereumAddress.fromHex(user);
+        EthereumAddress _userAddress = EthereumAddress.fromHex(user);
         final GetUserAccountData userAccountData =
             await lendingPoolContract.getUserAccountData(_userAddress);
 
@@ -297,13 +308,12 @@ class Web3Service {
             _config.focusHealthFactor) {
           log.d('found accounts with low Health factor');
 
-          _userConfig = await _getAaveUserConfig(_userAddress);
+          AaveUserReserveData _userReserveData =
+              await getAaveUserReserveData(userAddress: _userAddress);
           AaveUserAccountData _userData = _parseUserAccountData(
-            userAddress: _userAddress,
-            userAccountData: userAccountData,
-            userConfig: _userConfig,
-          );
-          await getAaveUserReserveData(_userData);
+              userAddress: _userAddress,
+              userAccountData: userAccountData,
+              userReserveData: _userReserveData);
 
           String jsonEncodedUserData = jsonEncode(_userData);
           _aaveUserList.add(jsonEncodedUserData);
@@ -375,18 +385,54 @@ class Web3Service {
   }
 
   /// get user reserve data
-  /// TODO: finish this
-  getAaveUserReserveData(AaveUserAccountData userData) async {
-    log.v('getAaveUserReserveData | userData: $userData');
+
+  Future<AaveUserReserveData> getAaveUserReserveData({
+    required EthereumAddress userAddress,
+  }) async {
+    log.d('getAaveUserReserveData | user address: $userAddress');
     try {
-      late var userReserveData;
-      for (final collateral in userData.collateralReserve) {
-        userReserveData = await protocolDataProviderContract.getUserReserveData(
-            EthereumAddress.fromHex(collateral),
-            EthereumAddress.fromHex(userData.userAddress));
+      List _userConfig = await _getAaveUserConfig(userAddress);
+      Map<String, List> _userReserves = _mixAndMatch(_userConfig);
+      AaveUserReserveData _aaveUserReserveData = AaveUserReserveData(
+        collateral: {},
+        stableDebt: {},
+        variableDebt: {},
+      );
+
+      for (final collateral in _userReserves['collateral']!) {
+        GetUserReserveData userReserveData =
+            await protocolDataProviderContract.getUserReserveData(
+          EthereumAddress.fromHex(collateral),
+          userAddress,
+        );
+        _aaveUserReserveData.collateral.update(
+          collateral,
+          (value) => userReserveData.currentATokenBalance.toDouble(),
+          ifAbsent: () => userReserveData.currentATokenBalance.toDouble(),
+        );
       }
+      for (final debt in _userReserves['debt']!) {
+        GetUserReserveData userReserveData =
+            await protocolDataProviderContract.getUserReserveData(
+          EthereumAddress.fromHex(debt),
+          userAddress,
+        );
+        _aaveUserReserveData.variableDebt.update(
+          debt,
+          (value) => userReserveData.currentVariableDebt.toDouble(),
+          ifAbsent: () => userReserveData.currentVariableDebt.toDouble(),
+        );
+        _aaveUserReserveData.stableDebt.update(
+          debt,
+          (value) => userReserveData.currentStableDebt.toDouble(),
+          ifAbsent: () => userReserveData.currentStableDebt.toDouble(),
+        );
+      }
+      log.d(_aaveUserReserveData);
+      return _aaveUserReserveData;
     } catch (e) {
       log.e('error getting user reserve data: $e');
+      throw 'noting to show';
     }
   }
 
@@ -494,10 +540,10 @@ class Web3Service {
   ///
   AaveRepayEvent _parseEventToAaveRepayEvent(
       {Repay? repay, FilterEvent? filterEvent}) {
-    log.v('parsing repay event');
+    log.v('parsing repay event: $filterEvent');
     late AaveRepayEvent parsedRepayEvent;
     if (filterEvent != null) {
-      final List _decodedResult = contractDepositEvent.decodeResults(
+      final List _decodedResult = contractRepayEvent.decodeResults(
           filterEvent.topics!, filterEvent.data!);
 
       parsedRepayEvent = AaveRepayEvent(
@@ -551,16 +597,17 @@ class Web3Service {
   AaveUserAccountData _parseUserAccountData({
     required EthereumAddress userAddress,
     required GetUserAccountData userAccountData,
-    required List userConfig,
+    required AaveUserReserveData userReserveData,
   }) {
     log.v('parsing user data');
-    List<List<String>> _userReserves = _mixAndMatch(userConfig);
+
     final parsedUserAccountData = AaveUserAccountData(
       userAddress: userAddress.toString(),
       totalCollateralEth: userAccountData.totalCollateralETH.toDouble(),
-      collateralReserve: _userReserves.first,
+      collateralReserve: userReserveData.collateral,
       totalDebtETH: userAccountData.totalDebtETH.toDouble(),
-      debtReserve: _userReserves.last,
+      stableDebtReserve: userReserveData.stableDebt,
+      variableDebtReserve: userReserveData.variableDebt,
       availableBorrowsETH: userAccountData.availableBorrowsETH.toDouble(),
       currentLiquidationThreshold:
           userAccountData.currentLiquidationThreshold.toDouble(),
@@ -570,9 +617,6 @@ class Web3Service {
 
     return parsedUserAccountData;
   }
-
-  /// parse user reserve data
-  /// TODO:
 
   /// write user data to file
   _writeToStorage(String contents) async {
@@ -593,7 +637,7 @@ class Web3Service {
   }
 
   /// format user data to write to file
-  List<List<String>> _mixAndMatch(List pairList) {
+  Map<String, List> _mixAndMatch(List pairList) {
     log.v('mix and match');
 
     /// for each reserve pair in the list,
@@ -617,6 +661,6 @@ class Web3Service {
         debtReserve.add(aaveReserveList[i].toString());
       }
     }
-    return [collateralReserve, debtReserve];
+    return {'collateral': collateralReserve, 'debt': debtReserve};
   }
 }
