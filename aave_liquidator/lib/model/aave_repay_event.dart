@@ -1,16 +1,16 @@
 class AaveRepayEvent {
   String reserve;
   String userAddress;
-  String onBehalfOf;
+  String repayer;
   double amount;
   AaveRepayEvent({
     required this.reserve,
     required this.userAddress,
-    required this.onBehalfOf,
+    required this.repayer,
     required this.amount,
   });
   @override
   String toString() {
-    return 'Repay Event:\n  Reserve:$reserve;\n User: $userAddress;\n onBehalfOf: $onBehalfOf;\n Repayed amount: $amount;';
+    return 'Repay Event: Reserve:$reserve; User: $userAddress; repayer: $repayer; Repayed amount: $amount;';
   }
 }

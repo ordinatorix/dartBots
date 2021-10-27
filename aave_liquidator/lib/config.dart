@@ -5,26 +5,35 @@ import 'package:path/path.dart';
 import 'package:web3dart/web3dart.dart';
 
 class Config {
+  /// Infura api url
   final String kovanApiUrl = 'https://kovan.infura.io/v3/${env['API_KEY']}';
 
+  /// Contract addresses
   final EthereumAddress lendingPoolProxyContractAddress =
       EthereumAddress.fromHex('0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe');
 
   final EthereumAddress lendingPoolContractAddress =
       EthereumAddress.fromHex('0x2646fcf7f0abb1ff279ed9845ade04019c907ebe');
 
+  final EthereumAddress protocolDataProviderContractAddress =
+      EthereumAddress.fromHex('0x3c73A5E5785cAC854D468F727c606C07488a29D6');
+
+  /// Contract names
   final String proxyContractName =
       'InitializableImmutableAdminUpgradeabilityProxy';
   final String lendingPoolContractName = 'LendingPool';
+  final String protocolDataProviderContractName = 'AaveProtocolDataProvider';
 
+  /// ABI file
   final File proxyAbiFile = File(
       join(dirname(Platform.script.path), '../lib/abi/aave_proxy.abi.json'));
   final File lendingPoolAbiFile = File(join(
       dirname(Platform.script.path), '../lib/abi/aave_lending_pool.abi.json'));
+  final File protocolDataProviderAbiFile = File(join(
+      dirname(Platform.script.path),
+      '../lib/abi/aave_protocol_data_provider.abi.json'));
 
-  /// user data storage file
-  final storageFilename = 'lib/storage.json';
-
+  /// Encoded topics
   final String encodedBorrowEventTopic =
       '0xc6a898309e823ee50bac64e45ca8adba6690e99e7841c45d754e2a38e9019d9b';
   final String encodedDepositEventTopic =
@@ -41,4 +50,7 @@ class Config {
   /// Currently the close factor is 0.5. In other words, liquidators can only liquidate a
   /// maximum of 50% of the amount pending to be repaid in a position.
   final double closeFactor = 0.5;
+
+  /// user data storage file
+  final storageFilename = 'lib/storage.json';
 }

@@ -6,8 +6,10 @@ class AaveUserAccountData {
   double currentLiquidationThreshold;
   double ltv;
   double healthFactor;
-  List<String> collateralReserve;
-  List<String> debtReserve;
+  Map collateralReserve;
+  Map variableDebtReserve;
+  Map stableDebtReserve;
+
   AaveUserAccountData({
     required this.userAddress,
     required this.totalCollateralEth,
@@ -17,22 +19,40 @@ class AaveUserAccountData {
     required this.ltv,
     required this.healthFactor,
     required this.collateralReserve,
-    required this.debtReserve,
+    required this.variableDebtReserve,
+    required this.stableDebtReserve,
   });
   @override
   String toString() {
-    return 'user: $userAddress,\n totalCollateralEth: $totalCollateralEth,\n totalDebtETH: $totalDebtETH,\n availableBorrowsETH: $availableBorrowsETH;\n currentLiquidationThreshold: $currentLiquidationThreshold;\n maxLTV: $ltv;\n healthFactor: $healthFactor,\n collateralReserve: $collateralReserve,\n debtReserve: $debtReserve';
+    return 'user: $userAddress,\n totalCollateralEth: $totalCollateralEth,\n totalDebtETH: $totalDebtETH,\n availableBorrowsETH: $availableBorrowsETH;\n currentLiquidationThreshold: $currentLiquidationThreshold;\n maxLTV: $ltv;\n healthFactor: $healthFactor;\n collateral: $collateralReserve:\n stable debt: $stableDebtReserve;\n variabledebt: $variableDebtReserve;';
   }
 
   Map<String, dynamic> toJson() => {
         "userAddress": userAddress,
-        "totalCollateralEth": totalCollateralEth.toString(),
-        "totalDebtETH": totalDebtETH.toString(),
-        "availableBorrowsETH": availableBorrowsETH.toString(),
-        "currentLiquidationThreshold": currentLiquidationThreshold.toString(),
-        "ltv": ltv.toString(),
-        "healthFactor": healthFactor.toString(),
-        "collateralReserve": collateralReserve.toString(),
-        "debtReserve": debtReserve.toString(),
+        "totalCollateralEth": totalCollateralEth,
+        "totalDebtETH": totalDebtETH,
+        "availableBorrowsETH": availableBorrowsETH,
+        "currentLiquidationThreshold": currentLiquidationThreshold,
+        "ltv": ltv,
+        "healthFactor": healthFactor,
+        "collateralReserve": collateralReserve,
+        "variabelDebtReserve": variableDebtReserve,
+        "stableDebtReserve": stableDebtReserve,
       };
+}
+
+class AaveUserReserveData {
+  Map<String, double> collateral;
+  Map<String, double> stableDebt;
+  Map<String, double> variableDebt;
+
+  AaveUserReserveData({
+    this.collateral = const {},
+    this.stableDebt = const {},
+    this.variableDebt = const {},
+  });
+  @override
+  String toString() {
+    return 'collateral: $collateral;\n stable debt: $stableDebt;\n variable debt: $variableDebt';
+  }
 }
