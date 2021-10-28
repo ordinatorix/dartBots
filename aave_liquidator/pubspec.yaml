@@ -14,6 +14,7 @@ dependencies:
   web3dart: ^2.3.1 # for interacting with web3
   path: ^1.8.0 # A comprehensive, cross-platform path manipulation library for Dart.
   logger: ^1.1.0
+  mongo_dart: ^0.7.3
   
 
 dev_dependencies:
