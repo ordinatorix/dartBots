@@ -3,7 +3,7 @@ import 'package:aave_liquidator/web3_service.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:logger/logger.dart';
 
-void main(List<String> arguments) {
+void main() {
   final log = getLogger('main');
   Logger.level = Level.info;
   log.v('Success, We\'re In!');

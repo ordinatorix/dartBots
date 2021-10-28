@@ -1,7 +1,7 @@
-import 'dart:io';
+// import 'dart:io';
 
 import 'package:dotenv/dotenv.dart';
-import 'package:path/path.dart';
+// import 'package:path/path.dart';
 import 'package:web3dart/web3dart.dart';
 
 class Config {
@@ -19,19 +19,19 @@ class Config {
       EthereumAddress.fromHex('0x3c73A5E5785cAC854D468F727c606C07488a29D6');
 
   /// Contract names
-  final String proxyContractName =
-      'InitializableImmutableAdminUpgradeabilityProxy';
-  final String lendingPoolContractName = 'LendingPool';
-  final String protocolDataProviderContractName = 'AaveProtocolDataProvider';
+  // final String proxyContractName =
+  //     'InitializableImmutableAdminUpgradeabilityProxy';
+  // final String lendingPoolContractName = 'LendingPool';
+  // final String protocolDataProviderContractName = 'AaveProtocolDataProvider';
 
   /// ABI file
-  final File proxyAbiFile = File(
-      join(dirname(Platform.script.path), '../lib/abi/aave_proxy.abi.json'));
-  final File lendingPoolAbiFile = File(join(
-      dirname(Platform.script.path), '../lib/abi/aave_lending_pool.abi.json'));
-  final File protocolDataProviderAbiFile = File(join(
-      dirname(Platform.script.path),
-      '../lib/abi/aave_protocol_data_provider.abi.json'));
+  // final File proxyAbiFile = File(
+  //     join(dirname(Platform.script.path), '../lib/abi/aave_proxy.abi.json'));
+  // final File lendingPoolAbiFile = File(join(
+  //     dirname(Platform.script.path), '../lib/abi/aave_lending_pool.abi.json'));
+  // final File protocolDataProviderAbiFile = File(join(
+  //     dirname(Platform.script.path),
+  //     '../lib/abi/aave_protocol_data_provider.abi.json'));
 
   /// Encoded topics
   final String encodedBorrowEventTopic =
@@ -53,4 +53,15 @@ class Config {
 
   /// user data storage file
   final storageFilename = 'lib/storage.json';
+}
+
+enum DeployedNetwork {
+  kovan,
+  mainnet,
+  ropsten,
+  polygon,
+  avalanche,
+  fantom,
+  arbitrum,
+  optimism,
 }
