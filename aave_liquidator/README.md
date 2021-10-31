@@ -9,3 +9,11 @@ to calculate the % drop in sset value:
 
 - use block mining time/interval to check account for liquidation.
 - calculate asset % drop to liquidate
+- when asset drops, make user as liquidatable.
+- CONS: can be complex if multi collateral
+
+
+-----------------
+
+query user based on preset frequency and health factor.
+
