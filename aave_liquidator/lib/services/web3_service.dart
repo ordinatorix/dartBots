@@ -1,14 +1,14 @@
 // ignore_for_file: avoid_log.
 
 import 'dart:async';
-// import 'dart:convert';
+
 import 'dart:io';
 
 import 'package:aave_liquidator/abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/abi/aave_protocol_data_provider.g.dart';
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/logger.dart';
-// import 'package:aave_liquidator/model/aave_user_reserve_data.dart';
+
 import 'package:aave_liquidator/model/aave_withdraw_event.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:dotenv/dotenv.dart';
@@ -71,9 +71,9 @@ class Web3Service {
     // queriedWithdrawEvent = await queryWithdrawEvent(fromBlock: 27990000);
     // log.v(
     //     'borrow event: $queriedBorrowEvent; deposit: $queriedDepositEvent; repay: $queriedRepayEvent; withdraw: $queriedWithdrawEvent');
-    // List<Map<String, dynamic>> userDataList =
+   
         await getUserAccountData(userList: userFromEvents);
-    // if (userDataList.isNotEmpty) await _store.resetUsers(userDataList);
+   
 
     pare.complete(true);
   }
@@ -634,23 +634,23 @@ class Web3Service {
     return parsedUserAccountData;
   }
 
-  /// write user data to file
-  _writeToStorage(String contents) async {
-    log.i('writing to storage');
-    try {
-      if (await File(_config.storageFilename).exists()) {
-        log.v('appending to storage file');
-        await File(_config.storageFilename)
-            .writeAsString(',$contents', mode: FileMode.append);
-      } else {
-        log.v('creating new storage file');
-        await File(_config.storageFilename)
-            .writeAsString(contents, mode: FileMode.append);
-      }
-    } catch (e) {
-      log.e('error writing to file: $e');
-    }
-  }
+  // /// write user data to file
+  // _writeToStorage(String contents) async {
+  //   log.i('writing to storage');
+  //   try {
+  //     if (await File(_config.storageFilename).exists()) {
+  //       log.v('appending to storage file');
+  //       await File(_config.storageFilename)
+  //           .writeAsString(',$contents', mode: FileMode.append);
+  //     } else {
+  //       log.v('creating new storage file');
+  //       await File(_config.storageFilename)
+  //           .writeAsString(contents, mode: FileMode.append);
+  //     }
+  //   } catch (e) {
+  //     log.e('error writing to file: $e');
+  //   }
+  // }
 
   /// format user data to write to file
   Map<String, List> _mixAndMatch(List pairList) {
