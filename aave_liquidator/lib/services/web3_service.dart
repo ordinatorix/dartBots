@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_log.
 
-import 'dart:convert';
+import 'dart:async';
+// import 'dart:convert';
 import 'dart:io';
 
 import 'package:aave_liquidator/abi/aave_lending_pool.g.dart';
@@ -9,6 +10,7 @@ import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/logger.dart';
 // import 'package:aave_liquidator/model/aave_user_reserve_data.dart';
 import 'package:aave_liquidator/model/aave_withdraw_event.dart';
+import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:http/http.dart';
 
@@ -16,20 +18,22 @@ import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_deposit_event.dart';
 import 'package:aave_liquidator/model/aave_repay_event.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
+
 import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('Web3Service');
 
 class Web3Service {
   late Config _config;
-
-  Web3Service() {
-    _config = Config();
+  late MongodService _store;
+  Web3Service(Config config, MongodService mongod) {
+    _store = mongod;
+    _config = config;
     _initWeb3Client();
   }
 
   bool _isListenning = false;
-  bool get isReady => _isListenning;
+  Future<bool> get isReady => pare.future;
 
   late Web3Client _web3Client;
   late int _chainId;
@@ -52,6 +56,7 @@ class Web3Service {
   late List<AaveWithdrawEvent> queriedWithdrawEvent;
   List<String> userFromEvents = [];
   List<EthereumAddress> aaveReserveList = [];
+  final pare = Completer<bool>();
 
   _initWeb3Client() async {
     await _connectViaRpcApi();
@@ -59,17 +64,18 @@ class Web3Service {
     await _setupContracts();
     aaveReserveList = await getAaveReserveList();
 
-    queriedBorrowEvent = await queryBorrowEvent(fromBlock: 27980000);
+    queriedBorrowEvent = await queryBorrowEvent(fromBlock: 28050000);
     userFromEvents = _extractUserFromBorrowEvent(queriedBorrowEvent);
     // queriedDepositEvent = await queryDepositEvent(fromBlock: 27990000);
     // queriedRepayEvent = await queryRepayEvent(fromBlock: 27990000);
     // queriedWithdrawEvent = await queryWithdrawEvent(fromBlock: 27990000);
     // log.v(
     //     'borrow event: $queriedBorrowEvent; deposit: $queriedDepositEvent; repay: $queriedRepayEvent; withdraw: $queriedWithdrawEvent');
-    List<String> userDataList =
+    // List<Map<String, dynamic>> userDataList =
         await getUserAccountData(userList: userFromEvents);
-//TODO: write to each doc to file instead of a list.
-    _writeToStorage(userDataList.toString());
+    // if (userDataList.isNotEmpty) await _store.resetUsers(userDataList);
+
+    pare.complete(true);
   }
 
   dispose() {
@@ -288,14 +294,15 @@ class Web3Service {
   }
 
   /// get user account data from Aave
-  Future<List<String>> getUserAccountData(
+  Future<List<Map<String, dynamic>>> getUserAccountData(
       {required List<String> userList}) async {
     try {
       if (userList.isEmpty) {
         throw 'no user given';
       }
-      log.i('getting user account data of ${userList.length} users');
-      List<String> _aaveUserList = [];
+      log.i(
+          'getting user account data of ${userList.length} users.\n Please wait...');
+      List<Map<String, dynamic>> _aaveUserList = [];
 
       /// iterate throught the list of users and get their user account data.
       for (var user in userList) {
@@ -314,9 +321,13 @@ class Web3Service {
               userAddress: _userAddress,
               userAccountData: userAccountData,
               userReserveData: _userReserveData);
+          log.d('user data in json: ${_userData.toJson()}');
+          // String jsonEncodedUserData = jsonEncode(_userData);
+          _aaveUserList.add(_userData.toJson());
 
-          String jsonEncodedUserData = jsonEncode(_userData);
-          _aaveUserList.add(jsonEncodedUserData);
+          //TODO: upload to each ner to db.
+
+          _store.replaceUserData(_userData.toJson());
         }
       }
       log.i('Found ${_aaveUserList.length} users at risk of liquidation.');
@@ -433,7 +444,7 @@ class Web3Service {
           ifAbsent: () => userReserveData.currentStableDebt.toDouble(),
         );
       }
-      log.d(_aaveUserReserveData);
+      log.d('final user reserves: $_aaveUserReserveData');
       return _aaveUserReserveData;
     } catch (e) {
       log.e('error getting user reserve data: $e');

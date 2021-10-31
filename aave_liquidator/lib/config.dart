@@ -53,6 +53,12 @@ class Config {
 
   /// user data storage file
   final storageFilename = 'lib/storage.json';
+
+  /// database uri
+  final String dbUri = 'mongodb://localhost:27017/${env['DB_NAME']}';
+
+  /// Aave users collection name.
+  final String aaveUserCollection = 'aaveUsers';
 }
 
 enum DeployedNetwork {
