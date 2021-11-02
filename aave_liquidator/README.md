@@ -6,7 +6,7 @@ the percentage drop in collateral value can be calculated as follow:
 to calculate the % drop in sset value: 
 * % drop token value = 1 - (token value@ liquidation/ token amount)/ current token price
 
-----------------------
+---------------------
 
 - use block mining time/interval to check account for liquidation.
 
