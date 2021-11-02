@@ -9,6 +9,7 @@ class AaveUserAccountData {
   Map collateralReserve;
   Map variableDebtReserve;
   Map stableDebtReserve;
+  double liquidationCollateralPrice;
 
   AaveUserAccountData({
     required this.userAddress,
@@ -21,6 +22,7 @@ class AaveUserAccountData {
     required this.collateralReserve,
     required this.variableDebtReserve,
     required this.stableDebtReserve,
+    this.liquidationCollateralPrice = 0,
   });
   @override
   String toString() {
@@ -55,4 +57,19 @@ class AaveUserReserveData {
   String toString() {
     return 'collateral: $collateral;\n stable debt: $stableDebt;\n variable debt: $variableDebt';
   }
+}
+
+class AaveReserveData {
+  String assetAddress;
+  String liquidationThreshold;
+  String liquidationBonus;
+  String assetPrice;
+  String assetPriceETH;
+
+  AaveReserveData(
+      {required this.assetAddress,
+      required this.liquidationThreshold,
+      required this.liquidationBonus,
+      required this.assetPrice,
+      required this.assetPriceETH});
 }
