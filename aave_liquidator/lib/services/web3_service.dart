@@ -6,6 +6,7 @@ import 'dart:async';
 
 import 'package:aave_liquidator/abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/abi/aave_protocol_data_provider.g.dart';
+import 'package:aave_liquidator/abi/chainlink_eth_usd_oracle.g.dart';
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/logger.dart';
 
@@ -35,8 +36,8 @@ class Web3Service {
   bool _isListenning = false;
   Future<bool> get isReady => pare.future;
 
-  late Web3Client _web3Client;
-  late int _chainId;
+  late Web3Client web3Client;
+  late int chainId;
   final Client _httpClient = Client();
 
   late CredentialsWithKnownAddress credentials;
@@ -44,8 +45,7 @@ class Web3Service {
   late Aave_lending_pool lendingPoolContract;
   late DeployedContract proxyContract;
   late Aave_protocol_data_provider protocolDataProviderContract;
-  //TODO: import chainlink contract for each asset
-
+  
 
   late ContractEvent contractDepositEvent;
   late ContractEvent contractWithdrawEvent;
@@ -89,10 +89,10 @@ class Web3Service {
   Future<void> _connectViaRpcApi() async {
     log.i('connecting using Infura');
 
-    _web3Client = Web3Client(_config.kovanApiUrl, _httpClient);
-    _chainId = await _web3Client.getNetworkId();
-    log.d('current chainID: $_chainId');
-    _isListenning = await _web3Client.isListeningForNetwork();
+    web3Client = Web3Client(_config.kovanApiUrl, _httpClient);
+    chainId = await web3Client.getNetworkId();
+    log.d('current chainID: $chainId');
+    _isListenning = await web3Client.isListeningForNetwork();
     log.d('web3Client is listening: $_isListenning');
   }
 
@@ -104,7 +104,7 @@ class Web3Service {
 
   getCurrentBalance() async {
     log.i('getting balance');
-    final balance = await _web3Client.getBalance(credentials.address);
+    final balance = await web3Client.getBalance(credentials.address);
     log.d(balance);
   }
 
@@ -115,13 +115,15 @@ class Web3Service {
     try {
       lendingPoolContract = Aave_lending_pool(
           address: _config.lendingPoolProxyContractAddress,
-          client: _web3Client,
-          chainId: _chainId);
+          client: web3Client,
+          chainId: chainId);
 
       protocolDataProviderContract = Aave_protocol_data_provider(
           address: _config.protocolDataProviderContractAddress,
-          client: _web3Client,
-          chainId: _chainId);
+          client: web3Client,
+          chainId: chainId);
+
+    
 
       /// setup contract events
       contractDepositEvent = lendingPoolContract.self.event('Deposit');
@@ -134,23 +136,6 @@ class Web3Service {
       log.e('error setting up contracts: $e');
     }
   }
-
-  // /// Get Aave reserve list.
-  
-  // Future<List<EthereumAddress>> getAaveReserveList() async {
-  //   log.i('getting reserve list');
-
-  //   try {
-  //     List<EthereumAddress> reserveList =
-  //         await lendingPoolContract.getReservesList();
-
-  //     return reserveList;
-  //   } catch (e) {
-  //     log.e('error getting aave reserve list: $e');
-  //     throw 'Could not get aave reserve list.';
-  //   }
-  // }
-
 
   /// Extract user from borrow event
   List<String> _extractUserFromBorrowEvent(List<AaveBorrowEvent> eventsList) {
@@ -182,7 +167,7 @@ class Web3Service {
           address: _config.lendingPoolProxyContractAddress);
 
       /// Query block for matching logs
-      List<FilterEvent> logs = await _web3Client.getLogs(_filterOptions);
+      List<FilterEvent> logs = await web3Client.getLogs(_filterOptions);
       log.d('Data: ${logs[0].data} \n Topics: ${logs[0].topics}');
     } catch (e) {
       log.e('error querying events by contract: $e');
@@ -206,7 +191,7 @@ class Web3Service {
       );
 
       /// Query block for matching logs.
-      List<FilterEvent> _borrowEvent = await _web3Client.getLogs(_filter);
+      List<FilterEvent> _borrowEvent = await web3Client.getLogs(_filter);
 
       log.v('borrow event: $_borrowEvent');
 
@@ -236,7 +221,7 @@ class Web3Service {
       );
 
       /// Query block for matching logs.
-      List<FilterEvent> _depositEvent = await _web3Client.getLogs(_filter);
+      List<FilterEvent> _depositEvent = await web3Client.getLogs(_filter);
 
       return _depositEvent
           .map((e) => _parseEventToAaveDepositEvent(filterEvent: e))
@@ -264,7 +249,7 @@ class Web3Service {
       );
 
       /// Query blocks for matching logs.
-      List<FilterEvent> _repayEvent = await _web3Client.getLogs(_filter);
+      List<FilterEvent> _repayEvent = await web3Client.getLogs(_filter);
 
       return _repayEvent
           .map((e) => _parseEventToAaveRepayEvent(filterEvent: e))
@@ -292,7 +277,7 @@ class Web3Service {
       );
 
       /// Query locks for logs
-      List<FilterEvent> _withdrawEvent = await _web3Client.getLogs(_filter);
+      List<FilterEvent> _withdrawEvent = await web3Client.getLogs(_filter);
 
       return _withdrawEvent
           .map((e) => _parseEventToAaveWithdrawEvent(filterEvent: e))
@@ -302,165 +287,6 @@ class Web3Service {
       throw 'Could not get withdraw event';
     }
   }
-
-  // /// Get user account data from Aave.
-  // Future<List<Map<String, dynamic>>> getUserAccountData(
-  //     {required List<String> userList}) async {
-  //   try {
-  //     if (userList.isEmpty) {
-  //       throw 'no user given';
-  //     }
-  //     log.i(
-  //         'getting user account data of ${userList.length} users.\n Please wait...');
-  //     List<Map<String, dynamic>> _aaveUserList = [];
-
-  //     /// Iterate throught the list of users and get their user account data.
-  //     for (var user in userList) {
-  //       EthereumAddress _userAddress = EthereumAddress.fromHex(user);
-  //       final GetUserAccountData userAccountData =
-  //           await lendingPoolContract.getUserAccountData(_userAddress);
-
-  //       /// Only keep users with a health factor below [_config.focusHealthFactor].
-  //       if (userAccountData.healthFactor.toDouble() <
-  //           _config.focusHealthFactor) {
-  //         log.d('found accounts with low Health factor');
-
-  //         AaveUserReserveData _userReserveData =
-  //             await getAaveUserReserveData(userAddress: _userAddress);
-  //         AaveUserAccountData _userData = _parseUserAccountData(
-  //             userAddress: _userAddress,
-  //             userAccountData: userAccountData,
-  //             userReserveData: _userReserveData);
-  //         log.d('user data in json: ${_userData.toJson()}');
-  //         // String jsonEncodedUserData = jsonEncode(_userData);
-  //         _aaveUserList.add(_userData.toJson());
-
-  //         //TODO: upload to each user to db?
-
-  //         _store.replaceUserData(_userData.toJson());
-  //       }
-  //     }
-  //     log.i('Found ${_aaveUserList.length} users at risk of liquidation.');
-  //     return _aaveUserList;
-  //   } catch (e) {
-  //     log.e('error getting user account data: $e');
-  //     throw 'Could not get user account data';
-  //   }
-  // }
-
-  // /// Get user configuration from aave.
-  // Future<List> _getAaveUserConfig(EthereumAddress aaveUser) async {
-  //   log.v('getting user config | aaveUser: $aaveUser');
-  //   try {
-  //     final rawUserConfigList =
-  //         await lendingPoolContract.getUserConfiguration(aaveUser);
-
-  //     BigInt userConfig = rawUserConfigList.first;
-  //     log.d('user config: $userConfig');
-  //     List _userReserveList = [];
-
-  //     /// Convert result to binary string.
-  //     String userConfigBinary = userConfig.toRadixString(2);
-
-  //     /// Check to see if length is even.
-  //     /// This is needed before splitting into binary pairs.
-  //     /// Pad beginning of string with ["00"] if odd.
-  //     if (userConfigBinary.length % 2 != 0) {
-  //       log.v('oldR: $userConfigBinary');
-  //       userConfigBinary =
-  //           userConfigBinary.padLeft(userConfigBinary.length + 1, '0');
-  //     }
-
-  //     /// Verify that the lenght of the reserves list is the same as the number
-  //     /// of pairs. If not, pad at beginning of string  with ["0"].
-  //     int numberOfPairs = (userConfigBinary.length / 2).round();
-
-  //     if (numberOfPairs != aaveReserveList.length) {
-  //       int diff = (aaveReserveList.length - numberOfPairs).round();
-
-  //       int padLength = (numberOfPairs + diff) * 2;
-
-  //       userConfigBinary = userConfigBinary.padLeft(padLength, '0');
-  //       log.v('newR: $userConfigBinary ${userConfigBinary.length}');
-  //     }
-
-  //     /// Split list into list of binary pairs.
-  //     final pattern = RegExp(r'(..)');
-  //     final patternMatch = pattern.allMatches(userConfigBinary);
-
-  //     for (var element in patternMatch) {
-  //       /// Add to a list.
-  //       _userReserveList.add(element.group(0));
-  //     }
-
-  //     /// Flip the resulting list to match aave reserve list ordering.
-  //     _userReserveList = _userReserveList.reversed.toList();
-  //     log.d(
-  //         'userReserveList: $_userReserveList ; lengthRatio: ${_userReserveList.length}:${aaveReserveList.length}');
-
-  //     return _userReserveList;
-  //   } catch (e) {
-  //     log.e('error getting user configuration: $e');
-  //     throw 'could not get user configurations';
-  //   }
-  // }
-
-  // /// Get user reserve data.
-  // Future<AaveUserReserveData> getAaveUserReserveData({
-  //   required EthereumAddress userAddress,
-  // }) async {
-  //   log.d('getAaveUserReserveData | user address: $userAddress');
-  //   try {
-  //     List _userConfig = await _getAaveUserConfig(userAddress);
-  //     Map<String, List> _userReserves = _mixAndMatch(_userConfig);
-  //     AaveUserReserveData _aaveUserReserveData = AaveUserReserveData(
-  //       collateral: {},
-  //       stableDebt: {},
-  //       variableDebt: {},
-  //     );
-
-  //     for (final collateral in _userReserves['collateral']!) {
-  //       GetUserReserveData userReserveData =
-  //           await protocolDataProviderContract.getUserReserveData(
-  //         EthereumAddress.fromHex(collateral),
-  //         userAddress,
-  //       );
-
-  //       /// Get user collateral.
-  //       _aaveUserReserveData.collateral.update(
-  //         collateral,
-  //         (value) => userReserveData.currentATokenBalance.toDouble(),
-  //         ifAbsent: () => userReserveData.currentATokenBalance.toDouble(),
-  //       );
-  //     }
-  //     for (final debt in _userReserves['debt']!) {
-  //       GetUserReserveData userReserveData =
-  //           await protocolDataProviderContract.getUserReserveData(
-  //         EthereumAddress.fromHex(debt),
-  //         userAddress,
-  //       );
-
-  //       /// Get user variable debt.
-  //       _aaveUserReserveData.variableDebt.update(
-  //         debt,
-  //         (value) => userReserveData.currentVariableDebt.toDouble(),
-  //         ifAbsent: () => userReserveData.currentVariableDebt.toDouble(),
-  //       );
-
-  //       /// Get user stable debt.
-  //       _aaveUserReserveData.stableDebt.update(
-  //         debt,
-  //         (value) => userReserveData.currentStableDebt.toDouble(),
-  //         ifAbsent: () => userReserveData.currentStableDebt.toDouble(),
-  //       );
-  //     }
-  //     log.d('final user reserves: $_aaveUserReserveData');
-  //     return _aaveUserReserveData;
-  //   } catch (e) {
-  //     log.e('error getting user reserve data: $e');
-  //     throw 'error getting user reserve data';
-  //   }
-  // }
 
   /// Query specific users
   /// TODO: using [getUserAccountData] update the db with new data from userwith  UltraLow Health Factor (ULHF).
@@ -636,75 +462,9 @@ class Web3Service {
     log.d(parsedWithdrawEvent);
     return parsedWithdrawEvent;
   }
+}
 
-  // /// parse user data
-  // AaveUserAccountData _parseUserAccountData({
-  //   required EthereumAddress userAddress,
-  //   required GetUserAccountData userAccountData,
-  //   required AaveUserReserveData userReserveData,
-  // }) {
-  //   log.v('parsing user data');
-
-  //   final parsedUserAccountData = AaveUserAccountData(
-  //     userAddress: userAddress.toString(),
-  //     totalCollateralEth: userAccountData.totalCollateralETH.toDouble(),
-  //     collateralReserve: userReserveData.collateral,
-  //     totalDebtETH: userAccountData.totalDebtETH.toDouble(),
-  //     stableDebtReserve: userReserveData.stableDebt,
-  //     variableDebtReserve: userReserveData.variableDebt,
-  //     availableBorrowsETH: userAccountData.availableBorrowsETH.toDouble(),
-  //     currentLiquidationThreshold:
-  //         userAccountData.currentLiquidationThreshold.toDouble(),
-  //     ltv: userAccountData.ltv.toDouble(),
-  //     healthFactor: userAccountData.healthFactor.toDouble(),
-  //   );
-
-  //   return parsedUserAccountData;
-  // }
-
-  // /// write user data to file
-  // _writeToStorage(String contents) async {
-  //   log.i('writing to storage');
-  //   try {
-  //     if (await File(_config.storageFilename).exists()) {
-  //       log.v('appending to storage file');
-  //       await File(_config.storageFilename)
-  //           .writeAsString(',$contents', mode: FileMode.append);
-  //     } else {
-  //       log.v('creating new storage file');
-  //       await File(_config.storageFilename)
-  //           .writeAsString(contents, mode: FileMode.append);
-  //     }
-  //   } catch (e) {
-  //     log.e('error writing to file: $e');
-  //   }
-  // }
-
-  // /// format user data to write to file
-  // Map<String, List> _mixAndMatch(List pairList) {
-  //   log.v('mix and match');
-
-  //   /// for each reserve pair in the list,
-  //   /// if the reserve pair is "10"
-  //   List<String> collateralReserve = [];
-  //   List<String> debtReserve = [];
-  //   for (var i = 0; i < aaveReserveList.length; i++) {
-  //     if (pairList[i] == '10') {
-  //       log.v('adding ${aaveReserveList[i]}to collateral');
-
-  //       /// add reserve address to colateral list
-  //       collateralReserve.add(aaveReserveList[i].toString());
-  //     } else if (pairList[i] == '01') {
-  //       log.v('adding ${aaveReserveList[1]} to debt');
-
-  //       /// add reserve address to debt list
-  //       debtReserve.add(aaveReserveList[i].toString());
-  //     } else if (pairList[i] == '11') {
-  //       /// add reserve address to collaterral and debt list.
-  //       collateralReserve.add(aaveReserveList[i].toString());
-  //       debtReserve.add(aaveReserveList[i].toString());
-  //     }
-  //   }
-  //   return {'collateral': collateralReserve, 'debt': debtReserve};
-  // }
+class MyContractEvent extends ContractEvent {
+  MyContractEvent(bool anonymous, String name, List<EventComponent> components)
+      : super(anonymous, name, components);
 }
