@@ -17,6 +17,9 @@ class Config {
 
   final EthereumAddress protocolDataProviderContractAddress =
       EthereumAddress.fromHex('0x3c73A5E5785cAC854D468F727c606C07488a29D6');
+  
+  final EthereumAddress ethUsdOracleContractAddress =
+      EthereumAddress.fromHex('0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419');
 
   /// Contract names
   // final String proxyContractName =
