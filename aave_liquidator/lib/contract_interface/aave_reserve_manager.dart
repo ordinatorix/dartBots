@@ -143,7 +143,7 @@ class AaveReserveManager {
           assetAddress: asset.toString(),
           assetConfig: res,
           assetPrice: 0,
-          assetPriceETH: 0,
+          
           aaveAssetPrice: 0,
         );
         // add to db

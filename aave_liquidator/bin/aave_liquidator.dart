@@ -98,7 +98,6 @@ void main() async {
             assetConfig: _assetConfigList[i],
             aaveAssetPrice: _assetPriceList[i],
             assetPrice: _oracleAssetPriceList.first['USD']!,
-            assetPriceETH: _oracleAssetPriceList.first['ETH']!,
           ));
         } else {
           reserveDataList[index] = AaveReserveData(
@@ -107,7 +106,6 @@ void main() async {
             assetConfig: _assetConfigList[i],
             aaveAssetPrice: _assetPriceList[i],
             assetPrice: _oracleAssetPriceList.first['USD']!,
-            assetPriceETH: _oracleAssetPriceList.first['ETH']!,
           );
         }
       }

@@ -3,7 +3,6 @@ class AaveReserveData {
   String assetAddress;
   AaveReserveConfigData assetConfig;
   double assetPrice;
-  double assetPriceETH;
   double aaveAssetPrice;
 
   AaveReserveData({
@@ -11,7 +10,6 @@ class AaveReserveData {
     required this.assetAddress,
     required this.assetConfig,
     required this.assetPrice,
-    required this.assetPriceETH,
     required this.aaveAssetPrice,
   });
 
@@ -20,7 +18,6 @@ class AaveReserveData {
         "assetAddress": assetAddress,
         "assetConfiguration": assetConfig.toJson(),
         "assetPrice": assetPrice,
-        "assetPriceETH": assetPriceETH,
         "aaveAssetPrice": aaveAssetPrice,
       };
 }

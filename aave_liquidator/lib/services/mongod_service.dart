@@ -125,7 +125,7 @@ class MongodService {
         liquidationBonus: data['assetConfiguration']['liquidationBonus'],
       ),
       assetPrice: data['assetPrice'],
-      assetPriceETH: data['assetPriceETH'],
+      
       aaveAssetPrice: data['aaveAssetPrice'],
     );
   }
