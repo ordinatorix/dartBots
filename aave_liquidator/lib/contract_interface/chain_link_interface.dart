@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:aave_liquidator/abi/chainlink_eth_usd_oracle.g.dart';
 import 'package:aave_liquidator/config.dart';
+import 'package:aave_liquidator/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
-import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('ChainLinkPriceOracle');
@@ -10,37 +12,36 @@ final log = getLogger('ChainLinkPriceOracle');
 class ChainLinkPriceOracle {
   //TODO: listen for price changes for each asset in reserve.
 
-  late Web3Service _web3service;
   late Config _config;
   late MongodService _mongodService;
-  late ContractEvent answerUpdatedEvent;
-  ChainLinkPriceOracle(Web3Service web3, Config config, MongodService mongod) {
-    _web3service = web3;
+  late ChainlinkContracts _chainlinkContracts;
+
+  ChainLinkPriceOracle({
+    required Config config,
+    required MongodService mongod,
+    required ChainlinkContracts chainlinkContracts,
+  }) {
     _config = config;
     _mongodService = mongod;
-    _setupContract();
-  }
-
-  late Chainlink_eth_usd_oracle ethUsdOracleContract;
-
-  _setupContract() {
-    ethUsdOracleContract = Chainlink_eth_usd_oracle(
-      address: _config.ethUsdOracleContractAddress,
-      client: _web3service.web3Client,
-      chainId: _web3service.chainId,
-    );
-
-    answerUpdatedEvent = ethUsdOracleContract.self.event('AnswerUpdated');
+    _chainlinkContracts = chainlinkContracts;
   }
 
   /// listen for eth price.
-  listenForEthPriceUpdate() {
-    ethUsdOracleContract.answerUpdatedEvents().listen((newPrice) {
+  StreamSubscription<AnswerUpdated> listenForEthPriceUpdate() {
+    log.i('listenning for price change');
+    return _chainlinkContracts.ethUsdOracleContract
+        .answerUpdatedEvents()
+        .listen((newPrice) {
       log.i('new price eth price');
       double _currentPrice = newPrice.current.toDouble();
-      double _preiousPrice = 1; //TODO: get pricefrom db.
-      getPercentChange(currentPrice: _currentPrice, previousPrice: 1);
-
+      double _previousPrice = 1; //TODO: get pricefrom db.
+      getPercentChange(
+        currentPrice: _currentPrice,
+        previousPrice: _previousPrice,
+      );
+      // update asset price in db
+      _mongodService.updateReserveAssetPrice(
+          assetAddress: _config.ethTokenAddress, newAssetPrice: _currentPrice);
     });
   }
 
@@ -51,7 +52,30 @@ class ChainLinkPriceOracle {
   getPercentChange({
     required double currentPrice,
     required double previousPrice,
-  }) {}
+  }) {
+    log.i(
+        'getPercentChange | currentPrice $currentPrice,previousPrice: $previousPrice');
+  }
 
-  computeHealthFactor(){}
+  /// query contract for lastest price of asset
+  /// TODO: get asset price
+  List<Map<String, double>> getAllAssetsPrice(
+      List<EthereumAddress> assetAddressList) {
+        _chainlinkContracts.ethUsdOracleContract.latestAnswer();
+    log.i('getAllAssetsPrice');
+    List<double> assetPriceList = [];
+    List<double> assetPriceListInEth = [];
+    for (var asset in assetAddressList) {
+      assetPriceList.add(1.0);
+      assetPriceListInEth.add(convertToEth(1));
+    }
+    return [
+      {'USD': assetPriceList.first, 'ETH': assetPriceListInEth.first}
+    ];
+  }
+
+  /// convert asset price to ETH
+  double convertToEth(double assetPrice) {
+    return 10.0;
+  }
 }
