@@ -6,7 +6,7 @@ import 'dart:async';
 
 import 'package:aave_liquidator/abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/abi/aave_protocol_data_provider.g.dart';
-import 'package:aave_liquidator/abi/chainlink_eth_usd_oracle.g.dart';
+
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/logger.dart';
 
@@ -18,7 +18,6 @@ import 'package:http/http.dart';
 import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_deposit_event.dart';
 import 'package:aave_liquidator/model/aave_repay_event.dart';
-import 'package:aave_liquidator/model/aave_user_account_data.dart';
 
 import 'package:web3dart/web3dart.dart';
 
@@ -45,7 +44,6 @@ class Web3Service {
   late Aave_lending_pool lendingPoolContract;
   late DeployedContract proxyContract;
   late Aave_protocol_data_provider protocolDataProviderContract;
-  
 
   late ContractEvent contractDepositEvent;
   late ContractEvent contractWithdrawEvent;
@@ -64,19 +62,6 @@ class Web3Service {
   _initWeb3Client() async {
     await _connectViaRpcApi();
     _getCredentials();
-    await _setupContracts();
-
-    // aaveReserveList = await getAaveReserveList();
-
-    // queriedBorrowEvent = await queryBorrowEvent(fromBlock: 28050000);
-    // userFromEvents = _extractUserFromBorrowEvent(queriedBorrowEvent);
-    // // queriedDepositEvent = await queryDepositEvent(fromBlock: 27990000);
-    // // queriedRepayEvent = await queryRepayEvent(fromBlock: 27990000);
-    // // queriedWithdrawEvent = await queryWithdrawEvent(fromBlock: 27990000);
-    // // log.v(
-    // //     'borrow event: $queriedBorrowEvent; deposit: $queriedDepositEvent; repay: $queriedRepayEvent; withdraw: $queriedWithdrawEvent');
-
-    // await getUserAccountData(userList: userFromEvents);
 
     pare.complete(_isListenning);
   }
@@ -108,35 +93,6 @@ class Web3Service {
     log.d(balance);
   }
 
-  /// setup contracts
-
-  _setupContracts() async {
-    log.i('setting up contract');
-    try {
-      lendingPoolContract = Aave_lending_pool(
-          address: _config.lendingPoolProxyContractAddress,
-          client: web3Client,
-          chainId: chainId);
-
-      protocolDataProviderContract = Aave_protocol_data_provider(
-          address: _config.protocolDataProviderContractAddress,
-          client: web3Client,
-          chainId: chainId);
-
-    
-
-      /// setup contract events
-      contractDepositEvent = lendingPoolContract.self.event('Deposit');
-      contractWithdrawEvent = lendingPoolContract.self.event('Withdraw');
-      contractBorrowEvent = lendingPoolContract.self.event('Borrow');
-      contractRepayEvent = lendingPoolContract.self.event('Repay');
-      contractLiquidationCallEvent =
-          lendingPoolContract.self.event('LiquidationCall');
-    } catch (e) {
-      log.e('error setting up contracts: $e');
-    }
-  }
-
   /// Extract user from borrow event
   List<String> _extractUserFromBorrowEvent(List<AaveBorrowEvent> eventsList) {
     log.i('extracting user address from borrow event');
@@ -164,7 +120,7 @@ class Web3Service {
       final _filterOptions = FilterOptions(
           fromBlock: BlockNum.exact(27713385),
           toBlock: BlockNum.exact(27713385),
-          address: _config.lendingPoolProxyContractAddress);
+          address: _config.lendingPoolProxyContractAddress,);
 
       /// Query block for matching logs
       List<FilterEvent> logs = await web3Client.getLogs(_filterOptions);
@@ -292,65 +248,6 @@ class Web3Service {
   /// TODO: using [getUserAccountData] update the db with new data from userwith  UltraLow Health Factor (ULHF).
   ///
 
-  /// Listen for borrow events.
-  /// TODO: for any user in db
-  /// update user data.
-  _listenForBorrowEvents() {
-    log.i('listenning for borrow event');
-
-    lendingPoolContract.borrowEvents().listen((_borrow) {
-      log.d('new borrow event: $_borrow');
-      _parseEventToAaveBorrowEvent(borrow: _borrow);
-    });
-  }
-
-  /// Listen for deposit events.
-  /// TODO: for any user in db
-  /// update user data
-  _listenForDepositEvent() {
-    log.i('listenning for deposit event');
-
-    lendingPoolContract.depositEvents().listen((_deposit) {
-      log.d('new deposit event: $_deposit');
-
-      _parseEventToAaveDepositEvent(deposit: _deposit);
-    });
-  }
-
-  /// listen for repay event
-  /// TODO: for any event from user in db,
-  /// update user data.
-  _listenForRepayEvent() {
-    log.i('listenning for repay event');
-
-    lendingPoolContract.repayEvents().listen((_repay) {
-      log.d('new repay event: $_repay');
-      _parseEventToAaveRepayEvent(repay: _repay);
-    });
-  }
-
-  /// listen for withdraw event
-  /// TODO: for any user in db
-  /// update user data.
-  _listenForWithdrawEvent() {
-    log.i('listenning for withdraw event');
-    lendingPoolContract.withdrawEvents().listen((_withdraw) {
-      log.d('new withdraw event: $_withdraw');
-      _parseEventToAaveWithdrawEvent(withdraw: _withdraw);
-    });
-  }
-
-  /// listen for liquidation call events
-  /// TODO:
-
-  _listenForLiquidationcall() {
-    log.i('listenning for liquidation call events');
-    lendingPoolContract.liquidationCallEvents().listen((_liqCall) {
-      log.d('new liquidation call event: $_liqCall');
-      // TODO: parse liquidation call event.
-    });
-  }
-
   /// parse borrow event data and topics
   AaveBorrowEvent _parseEventToAaveBorrowEvent(
       {Borrow? borrow, FilterEvent? filterEvent}) {
@@ -462,9 +359,4 @@ class Web3Service {
     log.d(parsedWithdrawEvent);
     return parsedWithdrawEvent;
   }
-}
-
-class MyContractEvent extends ContractEvent {
-  MyContractEvent(bool anonymous, String name, List<EventComponent> components)
-      : super(anonymous, name, components);
 }
