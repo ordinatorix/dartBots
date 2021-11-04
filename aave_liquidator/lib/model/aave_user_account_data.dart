@@ -59,17 +59,3 @@ class AaveUserReserveData {
   }
 }
 
-class AaveReserveData {
-  String assetAddress;
-  String liquidationThreshold;
-  String liquidationBonus;
-  String assetPrice;
-  String assetPriceETH;
-
-  AaveReserveData(
-      {required this.assetAddress,
-      required this.liquidationThreshold,
-      required this.liquidationBonus,
-      required this.assetPrice,
-      required this.assetPriceETH});
-}

@@ -1,21 +1,27 @@
 import 'package:aave_liquidator/abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/abi/aave_protocol_data_provider.g.dart';
 import 'package:aave_liquidator/config.dart';
+import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
+import 'package:aave_liquidator/helper/user_parser.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
-import 'package:aave_liquidator/services/web3_service.dart';
+
 import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('AaveUserLiquidator');
 
-class AaveUserLiquidator {
-  late Web3Service _web3service;
+class AaveUserManager {
   late MongodService _store;
   late Config _config;
-
-  AaveUserLiquidator(Web3Service web3, Config config, MongodService mongod) {
-    _web3service = web3;
+  final UserParser _parser = UserParser();
+  late AaveContracts _aaveContracts;
+  AaveUserManager({
+    required Config config,
+    required AaveContracts aaveContracts,
+    required MongodService mongod,
+  }) {
+    _aaveContracts = aaveContracts;
   }
 
   late List aaveReserveList; // TODO: fetch from db.
@@ -36,7 +42,7 @@ class AaveUserLiquidator {
       /// Iterate throught the list of users and get their user account data.
       for (var user in userList) {
         EthereumAddress _userAddress = EthereumAddress.fromHex(user);
-        final GetUserAccountData userAccountData = await _web3service
+        final GetUserAccountData userAccountData = await _aaveContracts
             .lendingPoolContract
             .getUserAccountData(_userAddress);
 
@@ -47,7 +53,7 @@ class AaveUserLiquidator {
 
           AaveUserReserveData _userReserveData =
               await getAaveUserReserveData(userAddress: _userAddress);
-          AaveUserAccountData _userData = _parseUserAccountData(
+          AaveUserAccountData _userData = _parser.parseUserAccountData(
               userAddress: _userAddress,
               userAccountData: userAccountData,
               userReserveData: _userReserveData);
@@ -57,7 +63,7 @@ class AaveUserLiquidator {
 
           //TODO: upload to each user to db?
 
-          _store.replaceUserData(_userData.toJson());
+          _store.updateUser(_userData.toJson());
         }
       }
       log.i('Found ${_aaveUserList.length} users at risk of liquidation.');
@@ -68,14 +74,14 @@ class AaveUserLiquidator {
     }
   }
 
-  /// Get user reserve data.
+  /// Get user reserve data for specific asset.
   Future<AaveUserReserveData> getAaveUserReserveData({
     required EthereumAddress userAddress,
   }) async {
     log.d('getAaveUserReserveData | user address: $userAddress');
     try {
       List _userConfig = await _getAaveUserConfig(userAddress);
-      Map<String, List> _userReserves = _mixAndMatch(_userConfig);
+      Map<String, List> _userReserves = _parser.mixAndMatch(_userConfig);
       AaveUserReserveData _aaveUserReserveData = AaveUserReserveData(
         collateral: {},
         stableDebt: {},
@@ -83,8 +89,9 @@ class AaveUserLiquidator {
       );
 
       for (final collateral in _userReserves['collateral']!) {
-        GetUserReserveData userReserveData =
-            await _web3service.protocolDataProviderContract.getUserReserveData(
+        GetUserReserveData userReserveData = await _aaveContracts
+            .protocolDataProviderContract
+            .getUserReserveData(
           EthereumAddress.fromHex(collateral),
           userAddress,
         );
@@ -97,8 +104,9 @@ class AaveUserLiquidator {
         );
       }
       for (final debt in _userReserves['debt']!) {
-        GetUserReserveData userReserveData =
-            await _web3service.protocolDataProviderContract.getUserReserveData(
+        GetUserReserveData userReserveData = await _aaveContracts
+            .protocolDataProviderContract
+            .getUserReserveData(
           EthereumAddress.fromHex(debt),
           userAddress,
         );
@@ -125,12 +133,12 @@ class AaveUserLiquidator {
     }
   }
 
-  /// Get user configuration from aave.
+  /// Get user configuration across all reserve from aave.
   Future<List> _getAaveUserConfig(EthereumAddress aaveUser) async {
     log.v('getting user config | aaveUser: $aaveUser');
     try {
-      final rawUserConfigList =
-          await _web3service.lendingPoolContract.getUserConfiguration(aaveUser);
+      final rawUserConfigList = await _aaveContracts.lendingPoolContract
+          .getUserConfiguration(aaveUser);
 
       BigInt userConfig = rawUserConfigList.first;
       log.d('user config: $userConfig');
@@ -180,58 +188,5 @@ class AaveUserLiquidator {
       log.e('error getting user configuration: $e');
       throw 'could not get user configurations';
     }
-  }
-
-  /// parse user data
-  AaveUserAccountData _parseUserAccountData({
-    required EthereumAddress userAddress,
-    required GetUserAccountData userAccountData,
-    required AaveUserReserveData userReserveData,
-  }) {
-    log.v('parsing user data');
-
-    final parsedUserAccountData = AaveUserAccountData(
-      userAddress: userAddress.toString(),
-      totalCollateralEth: userAccountData.totalCollateralETH.toDouble(),
-      collateralReserve: userReserveData.collateral,
-      totalDebtETH: userAccountData.totalDebtETH.toDouble(),
-      stableDebtReserve: userReserveData.stableDebt,
-      variableDebtReserve: userReserveData.variableDebt,
-      availableBorrowsETH: userAccountData.availableBorrowsETH.toDouble(),
-      currentLiquidationThreshold:
-          userAccountData.currentLiquidationThreshold.toDouble(),
-      ltv: userAccountData.ltv.toDouble(),
-      healthFactor: userAccountData.healthFactor.toDouble(),
-    );
-
-    return parsedUserAccountData;
-  }
-
-  /// format user data to write to file
-  Map<String, List> _mixAndMatch(List pairList) {
-    log.v('mix and match');
-
-    /// for each reserve pair in the list,
-    /// if the reserve pair is "10"
-    List<String> collateralReserve = [];
-    List<String> debtReserve = [];
-    for (var i = 0; i < aaveReserveList.length; i++) {
-      if (pairList[i] == '10') {
-        log.v('adding ${aaveReserveList[i]}to collateral');
-
-        /// add reserve address to colateral list
-        collateralReserve.add(aaveReserveList[i].toString());
-      } else if (pairList[i] == '01') {
-        log.v('adding ${aaveReserveList[1]} to debt');
-
-        /// add reserve address to debt list
-        debtReserve.add(aaveReserveList[i].toString());
-      } else if (pairList[i] == '11') {
-        /// add reserve address to collaterral and debt list.
-        collateralReserve.add(aaveReserveList[i].toString());
-        debtReserve.add(aaveReserveList[i].toString());
-      }
-    }
-    return {'collateral': collateralReserve, 'debt': debtReserve};
   }
 }
