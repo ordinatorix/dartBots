@@ -59,7 +59,7 @@ class ChainLinkPriceOracle {
   }
 
   /// query contract for lastest price of asset
-  /// TODO: get asset price
+  /// TODO: get asset price. this will required to use mainnet
   Future<List<Map<String, double>>> getAllAssetsPrice(
       List<EthereumAddress> assetAddressList) async {
     try {

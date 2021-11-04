@@ -53,6 +53,7 @@ void main() async {
   /// TODO: create 24hr cron repeat interval.
 
   _pollReserveData() async {
+    //TODO: move this to own poller file
     log.i('_pollReserveData');
     try {
       /// get reserve data from db.
@@ -89,7 +90,7 @@ void main() async {
 
         List tokenData = _assetSymbolList
             .firstWhere((element) => element[1] == _assetsList[i]);
-        
+
         if (index == -1) {
           reserveDataList.add(AaveReserveData(
             assetSymbol: tokenData[0],
