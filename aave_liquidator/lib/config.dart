@@ -17,24 +17,16 @@ class Config {
 
   final EthereumAddress protocolDataProviderContractAddress =
       EthereumAddress.fromHex('0x3c73A5E5785cAC854D468F727c606C07488a29D6');
-  
+
+  final EthereumAddress aavePriceOracleContractAddress =
+      EthereumAddress.fromHex('0xB8bE51E6563BB312Cbb2aa26e352516c25c26ac1');
+
   final EthereumAddress ethUsdOracleContractAddress =
       EthereumAddress.fromHex('0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419');
 
-  /// Contract names
-  // final String proxyContractName =
-  //     'InitializableImmutableAdminUpgradeabilityProxy';
-  // final String lendingPoolContractName = 'LendingPool';
-  // final String protocolDataProviderContractName = 'AaveProtocolDataProvider';
-
-  /// ABI file
-  // final File proxyAbiFile = File(
-  //     join(dirname(Platform.script.path), '../lib/abi/aave_proxy.abi.json'));
-  // final File lendingPoolAbiFile = File(join(
-  //     dirname(Platform.script.path), '../lib/abi/aave_lending_pool.abi.json'));
-  // final File protocolDataProviderAbiFile = File(join(
-  //     dirname(Platform.script.path),
-  //     '../lib/abi/aave_protocol_data_provider.abi.json'));
+  /// Token Symbol
+  final String ethToken = 'ETH';
+  //TODO:  add other reserve token symbol
 
   /// Encoded topics
   final String encodedBorrowEventTopic =
@@ -55,13 +47,16 @@ class Config {
   final double closeFactor = 0.5;
 
   /// user data storage file
-  final storageFilename = 'lib/storage.json';
+  final String storageFilename = 'lib/storage.json';
 
   /// database uri
   final String dbUri = 'mongodb://localhost:27017/${env['DB_NAME']}';
 
   /// Aave users collection name.
   final String aaveUserCollection = 'aaveUsers';
+
+  /// Aave reserve collection name
+  final String aaveReserveCollectionName = 'aaveReserve';
 }
 
 enum DeployedNetwork {

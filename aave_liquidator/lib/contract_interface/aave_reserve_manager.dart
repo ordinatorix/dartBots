@@ -37,6 +37,7 @@ class AaveReserveManager {
       throw 'Could not get aave reserve list.';
     }
   }
+  //TODO: get reserve token symbol from getAllReservesTokens()
 
   /// Get reserve configuration data.
   ///
