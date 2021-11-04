@@ -1,4 +1,5 @@
 class AaveReserveData {
+  String assetSymbol;
   String assetAddress;
   AaveReserveConfigData assetConfig;
   double assetPrice;
@@ -6,6 +7,7 @@ class AaveReserveData {
   double aaveAssetPrice;
 
   AaveReserveData({
+    required this.assetSymbol,
     required this.assetAddress,
     required this.assetConfig,
     required this.assetPrice,
@@ -14,6 +16,7 @@ class AaveReserveData {
   });
 
   Map<String, dynamic> toJson() => {
+        "assetSymbol": assetSymbol,
         "assetAddress": assetAddress,
         "assetConfiguration": assetConfig.toJson(),
         "assetPrice": assetPrice,

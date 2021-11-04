@@ -37,7 +37,18 @@ class AaveReserveManager {
       throw 'Could not get aave reserve list.';
     }
   }
-  //TODO: get reserve token symbol from getAllReservesTokens()
+
+  /// Get reserve asset token symbol from aave
+  Future<List> getTokenSymbol() async {
+    log.i('getTokenSymbol');
+    try {
+      return await _aaveContracts.protocolDataProviderContract
+          .getAllReservesTokens();
+    } catch (e) {
+      log.e('error getting token symol: $e');
+      throw 'error getting token symol';
+    }
+  }
 
   /// Get reserve configuration data.
   ///
@@ -46,15 +57,20 @@ class AaveReserveManager {
 
   Future<AaveReserveConfigData> getAaveReserveConfigurationData(
       {required EthereumAddress asset}) async {
-    log.i('getAaveReserveConfigurationData');
-    final reserveConfig = await _aaveContracts.protocolDataProviderContract
-        .getReserveConfigurationData(asset);
-    return _parseReserveConfig(reserveConfig);
+    log.v('getAaveReserveConfigurationData');
+    try {
+      final reserveConfig = await _aaveContracts.protocolDataProviderContract
+          .getReserveConfigurationData(asset);
+      return _parseReserveConfig(reserveConfig);
+    } catch (e) {
+      log.e('error getting reserve config data: $e');
+      throw 'error getting reserve config data';
+    }
   }
 
   /// Parse Aave reserve config data.
   AaveReserveConfigData _parseReserveConfig(GetReserveConfigurationData data) {
-    log.i('_parseReserveConfig');
+    log.v('_parseReserveConfig');
     return AaveReserveConfigData(
         liquidationBonus: data.liquidationBonus.toDouble(),
         liquidationThreshold: data.liquidationThreshold.toDouble());
@@ -63,12 +79,17 @@ class AaveReserveManager {
   Future<List<AaveReserveConfigData>> getAllReserveAssetConfigData(
       List<EthereumAddress> assetAddress) async {
     log.i('getAllReserveAssetConfigData');
-    List<AaveReserveConfigData> _reserveConfigList = await Future.wait([
-      for (EthereumAddress asset in assetAddress)
-        getAaveReserveConfigurationData(asset: asset),
-    ]);
-    log.d('config list: $_reserveConfigList');
-    return _reserveConfigList;
+    try {
+      List<AaveReserveConfigData> _reserveConfigList = await Future.wait([
+        for (EthereumAddress asset in assetAddress)
+          getAaveReserveConfigurationData(asset: asset),
+      ]);
+      log.d('config list: $_reserveConfigList');
+      return _reserveConfigList;
+    } catch (e) {
+      log.e('error getting all reserve asset config data: $e');
+      throw 'error getting all reserve config data';
+    }
   }
 
   /// Gets the asset price from aave.
@@ -76,10 +97,15 @@ class AaveReserveManager {
   /// Returns the price of the asset in ETH wei units
   Future<double> getReserveAssetPriceFromAave(String asset) async {
     log.i('getReserveAssetPriceFromAave');
-    final BigInt _price = await _aaveContracts.aavePriceProvider
-        .getAssetPrice(EthereumAddress.fromHex(asset));
+    try {
+      final BigInt _price = await _aaveContracts.aavePriceProvider
+          .getAssetPrice(EthereumAddress.fromHex(asset));
 
-    return _price.toDouble();
+      return _price.toDouble();
+    } catch (e) {
+      log.e('error getting asset price from aave: $e');
+      throw 'no price from aave';
+    }
   }
 
   /// Gets all assets price from aave.
@@ -87,35 +113,45 @@ class AaveReserveManager {
   Future<List<double>> getAllReserveAssetPrice(
       List<EthereumAddress> assets) async {
     log.i('getAllReserveAssetPrice');
+    try {
+      List<double> _priceList = [];
 
-    List<double> _priceList = [];
-
-    final List _rawPriceList =
-        await _aaveContracts.aavePriceProvider.getAssetsPrices(assets);
-    for (BigInt price in _rawPriceList) {
-      _priceList.add(price.toDouble());
+      final List _rawPriceList =
+          await _aaveContracts.aavePriceProvider.getAssetsPrices(assets);
+      for (BigInt price in _rawPriceList) {
+        _priceList.add(price.toDouble());
+      }
+      return _priceList;
+    } catch (e) {
+      log.e('error getting all asset price from aave: $e');
+      throw 'error getting all prices from aave';
     }
-    return _priceList;
   }
 
   updateAaveReserveData() async {
-    final List<EthereumAddress> _reserveList = await getAaveReserveList();
-    final List<double> _assetsPrice =
-        await getAllReserveAssetPrice(_reserveList);
+    try {
+      final List<EthereumAddress> _reserveList = await getAaveReserveList();
+      final List<double> _assetsPrice =
+          await getAllReserveAssetPrice(_reserveList);
 
-    for (var asset in _reserveList) {
-      final res = await getAaveReserveConfigurationData(asset: asset);
+      for (var asset in _reserveList) {
+        final res = await getAaveReserveConfigurationData(asset: asset);
 
-      // parse reserve data
-      final AaveReserveData _reserveData = AaveReserveData(
-        assetAddress: asset.toString(),
-        assetConfig: res,
-        assetPrice: 0,
-        assetPriceETH: 0,
-        aaveAssetPrice: 0,
-      );
-      // add to db
-      _store.updateAaveReserve(_reserveData);
+        // parse reserve data
+        final AaveReserveData _reserveData = AaveReserveData(
+          assetSymbol: '',
+          assetAddress: asset.toString(),
+          assetConfig: res,
+          assetPrice: 0,
+          assetPriceETH: 0,
+          aaveAssetPrice: 0,
+        );
+        // add to db
+        _store.updateAaveReserve(_reserveData);
+      }
+    } catch (e) {
+      log.e('error updating aave reserve data: $e');
+      throw 'error updating reserve data';
     }
   }
 }

@@ -73,12 +73,15 @@ class Web3Service {
   /// Connect to blockchain using address in localhost
   Future<void> _connectViaRpcApi() async {
     log.i('connecting using Infura');
-
-    web3Client = Web3Client(_config.kovanApiUrl, _httpClient);
-    chainId = await web3Client.getNetworkId();
-    log.d('current chainID: $chainId');
-    _isListenning = await web3Client.isListeningForNetwork();
-    log.d('web3Client is listening: $_isListenning');
+    try {
+      web3Client = Web3Client(_config.kovanApiUrl, _httpClient);
+      chainId = await web3Client.getNetworkId();
+      log.d('current chainID: $chainId');
+      _isListenning = await web3Client.isListeningForNetwork();
+      log.d('web3Client is listening: $_isListenning');
+    } catch (e) {
+      log.e('error connecting to lockchain: $e');
+    }
   }
 
   /// Connect wallet
@@ -118,9 +121,10 @@ class Web3Service {
     try {
       /// Create filter
       final _filterOptions = FilterOptions(
-          fromBlock: BlockNum.exact(27713385),
-          toBlock: BlockNum.exact(27713385),
-          address: _config.lendingPoolProxyContractAddress,);
+        fromBlock: BlockNum.exact(27713385),
+        toBlock: BlockNum.exact(27713385),
+        address: _config.lendingPoolProxyContractAddress,
+      );
 
       /// Query block for matching logs
       List<FilterEvent> logs = await web3Client.getLogs(_filterOptions);

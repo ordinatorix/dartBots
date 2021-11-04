@@ -104,22 +104,28 @@ class MongodService {
   Future<List<AaveReserveData>> getReservesFromDb() async {
     log.i('getReservesFromDb');
     try {
-      var res = _reserveStore.find();
-      return res.map((event) => _parseReserveToAaveReserveData(event)).toList();
+      var res = await _reserveStore.find().toList();
+      return res.map((e) => _parseReserveToAaveReserveData(e)).toList();
     } catch (e) {
-      log.e('error getting reservesfrom db: $e');
-      throw '';
+      log.e('error getting reserves from db: $e');
+      throw 'could not find reserves';
     }
   }
 
   /// parse reservedata.
   AaveReserveData _parseReserveToAaveReserveData(data) {
     log.v('_parseReserveToAaveReserveData');
+
     return AaveReserveData(
+      assetSymbol: data['assetSymbol'],
       assetAddress: data['assetAddress'],
-      assetConfig: data['assetConfiguration'],
+      assetConfig: AaveReserveConfigData(
+        liquidationThreshold: data['assetConfiguration']
+            ['liquidationThreshold'],
+        liquidationBonus: data['assetConfiguration']['liquidationBonus'],
+      ),
       assetPrice: data['assetPrice'],
-      assetPriceETH: data['assetPriceEth'],
+      assetPriceETH: data['assetPriceETH'],
       aaveAssetPrice: data['aaveAssetPrice'],
     );
   }

@@ -41,7 +41,8 @@ class ChainLinkPriceOracle {
       );
       // update asset price in db
       _mongodService.updateReserveAssetPrice(
-          assetAddress: _config.ethTokenAddress, newAssetPrice: _currentPrice);
+          assetAddress: '_config.ethTokenAddress',
+          newAssetPrice: _currentPrice);
     });
   }
 
@@ -59,19 +60,24 @@ class ChainLinkPriceOracle {
 
   /// query contract for lastest price of asset
   /// TODO: get asset price
-  List<Map<String, double>> getAllAssetsPrice(
-      List<EthereumAddress> assetAddressList) {
-        _chainlinkContracts.ethUsdOracleContract.latestAnswer();
-    log.i('getAllAssetsPrice');
-    List<double> assetPriceList = [];
-    List<double> assetPriceListInEth = [];
-    for (var asset in assetAddressList) {
-      assetPriceList.add(1.0);
-      assetPriceListInEth.add(convertToEth(1));
+  Future<List<Map<String, double>>> getAllAssetsPrice(
+      List<EthereumAddress> assetAddressList) async {
+    try {
+      // await _chainlinkContracts.ethUsdOracleContract.latestAnswer();
+      log.i('getAllAssetsPrice');
+      List<double> assetPriceList = [];
+      List<double> assetPriceListInEth = [];
+      for (var asset in assetAddressList) {
+        assetPriceList.add(1.0);
+        assetPriceListInEth.add(convertToEth(1));
+      }
+      return [
+        {'USD': assetPriceList.first, 'ETH': assetPriceListInEth.first}
+      ];
+    } catch (e) {
+      log.e('error getting price from oracle: $e');
+      throw 'no price from oracle';
     }
-    return [
-      {'USD': assetPriceList.first, 'ETH': assetPriceListInEth.first}
-    ];
   }
 
   /// convert asset price to ETH

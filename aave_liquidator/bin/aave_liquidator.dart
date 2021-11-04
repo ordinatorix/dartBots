@@ -13,7 +13,7 @@ import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
 
 final log = getLogger('main');
 void main() async {
-  Logger.level = Level.info;
+  Logger.level = Level.debug;
   log.v('Success, We\'re In!');
 
   /// Load env and config files.
@@ -54,55 +54,68 @@ void main() async {
 
   _pollReserveData() async {
     log.i('_pollReserveData');
+    try {
+      /// get reserve data from db.
+      final List<AaveReserveData> reserveDataList =
+          await _mongodService.getReservesFromDb();
+      log.d('reserve list: $reserveDataList');
 
-    /// get reserve data from db.
-    final List<AaveReserveData> reserveDataList =
-        await _mongodService.getReservesFromDb();
-    log.d('reserve list: $reserveDataList');
+      /// get list of assets from aave.
+      final _assetsList = await _reserveManager.getAaveReserveList();
 
-    /// get list of assets from aave.
-    final _assetsList = await _reserveManager.getAaveReserveList();
+      /// get aave reserve assets symbol
+      final List _assetSymbolList = await _reserveManager.getTokenSymbol();
+      log.d(_assetSymbolList);
 
-    /// get price from aave
-    final _assetPriceList =
-        await _reserveManager.getAllReserveAssetPrice(_assetsList);
-    log.d('asset price list: $_assetPriceList');
+      /// get price from aave
+      final _assetPriceList =
+          await _reserveManager.getAllReserveAssetPrice(_assetsList);
+      log.d('asset price list: $_assetPriceList');
 
-    /// get asset config from aave
-    final _assetConfigList =
-        await _reserveManager.getAllReserveAssetConfigData(_assetsList);
-    log.d('asset config list: $_assetConfigList');
+      /// get asset config from aave
+      final _assetConfigList =
+          await _reserveManager.getAllReserveAssetConfigData(_assetsList);
+      log.d('asset config list: $_assetConfigList');
 
-    /// get asset price from chainlink
-    final List<Map<String, double>> _oracleAssetPriceList =
-        _oracle.getAllAssetsPrice(_assetsList);
-    log.d('oracle pricelist: $_oracleAssetPriceList');
+      /// get asset price from chainlink
+      final List<Map<String, double>> _oracleAssetPriceList =
+          await _oracle.getAllAssetsPrice(_assetsList);
+      log.d('oracle pricelist: $_oracleAssetPriceList');
 
-    /// update [reserveData] with new data
-    for (int i = 0; i < _assetsList.length; i++) {
-      int index = reserveDataList.indexWhere(
-          (element) => element.assetAddress == _assetsList[i].toString());
-      if (index == -1) {
-        reserveDataList.add(AaveReserveData(
-          assetAddress: _assetsList[i].toString(),
-          assetConfig: _assetConfigList[i],
-          aaveAssetPrice: _assetPriceList[i],
-          assetPrice: _oracleAssetPriceList.first['USD']!,
-          assetPriceETH: _oracleAssetPriceList.first['ETH']!,
-        ));
-      } else {
-        reserveDataList[index] = AaveReserveData(
-          assetAddress: _assetsList[i].toString(),
-          assetConfig: _assetConfigList[i],
-          aaveAssetPrice: _assetPriceList[i],
-          assetPrice: _oracleAssetPriceList[i]['USD']!,
-          assetPriceETH: _oracleAssetPriceList[i]['ETH']!,
-        );
+      /// update [reserveData] with new data
+      for (int i = 0; i < _assetsList.length; i++) {
+        int index = reserveDataList.indexWhere(
+            (element) => element.assetAddress == _assetsList[i].toString());
+
+        List tokenData = _assetSymbolList
+            .firstWhere((element) => element[1] == _assetsList[i]);
+        
+        if (index == -1) {
+          reserveDataList.add(AaveReserveData(
+            assetSymbol: tokenData[0],
+            assetAddress: _assetsList[i].toString(),
+            assetConfig: _assetConfigList[i],
+            aaveAssetPrice: _assetPriceList[i],
+            assetPrice: _oracleAssetPriceList.first['USD']!,
+            assetPriceETH: _oracleAssetPriceList.first['ETH']!,
+          ));
+        } else {
+          reserveDataList[index] = AaveReserveData(
+            assetSymbol: tokenData[0],
+            assetAddress: _assetsList[i].toString(),
+            assetConfig: _assetConfigList[i],
+            aaveAssetPrice: _assetPriceList[i],
+            assetPrice: _oracleAssetPriceList.first['USD']!,
+            assetPriceETH: _oracleAssetPriceList.first['ETH']!,
+          );
+        }
       }
-    }
 
-    /// update db with new reserve data.
-    await _mongodService.resetReserveData(reserveDataList);
+      /// update db with new reserve data.
+      await _mongodService.resetReserveData(reserveDataList);
+    } catch (e) {
+      log.e('error pollig: $e');
+    }
   }
 
   await _pollReserveData();
