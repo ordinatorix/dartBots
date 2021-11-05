@@ -7,8 +7,24 @@ import 'package:web3dart/web3dart.dart';
 class Config {
   /// Infura api url
   final String kovanApiUrl = 'https://kovan.infura.io/v3/${env['API_KEY']}';
+  final String mainnetApiUrl = 'https://mainnet.infura.io/v3/${env['API_KEY']}';
 
-  /// Contract addresses
+  /// Aave Mainnet Contract addresses
+  /// TODO: group address by network
+  ///
+  // final EthereumAddress lendingPoolProxyContractAddress =
+  //     EthereumAddress.fromHex('0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9'); //
+
+  // final EthereumAddress lendingPoolContractAddress =
+  //     EthereumAddress.fromHex('0xC6845a5C768BF8D7681249f8927877Efda425baf'); //
+
+  // final EthereumAddress protocolDataProviderContractAddress =
+  //     EthereumAddress.fromHex('0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'); //
+
+  // final EthereumAddress aavePriceOracleContractAddress =
+  //     EthereumAddress.fromHex('0xA50ba011c48153De246E5192C8f9258A2ba79Ca9'); //
+
+  /// Aave Kovan contract address
   final EthereumAddress lendingPoolProxyContractAddress =
       EthereumAddress.fromHex('0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe');
 
@@ -21,11 +37,24 @@ class Config {
   final EthereumAddress aavePriceOracleContractAddress =
       EthereumAddress.fromHex('0xB8bE51E6563BB312Cbb2aa26e352516c25c26ac1');
 
+  /// Chainlink Mainnet contract addresses
+  ///
+
+  // final EthereumAddress feedRegistryContractAddress =
+  //     EthereumAddress.fromHex('0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf');
+
+  // final EthereumAddress ethUsdOracleContractAddress =
+  //     EthereumAddress.fromHex('0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419');
+
   final EthereumAddress ethUsdOracleContractAddress =
-      EthereumAddress.fromHex('0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419');
+      EthereumAddress.fromHex('0x9326BFA02ADD2366b30bacB125260Af641031331');
+
+  final EthereumAddress feedRegistryContractAddress =
+      EthereumAddress.fromHex('0xAa7F6f7f507457a1EE157fE97F6c7DB2BEec5cD0');
 
   /// Token Symbol
   final String ethToken = 'ETH';
+  final String denominationEth = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
   //TODO:  add other reserve token symbol
 
   /// Encoded topics
