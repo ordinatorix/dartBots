@@ -1,5 +1,6 @@
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/contract_helpers/chainlink_contracts.dart';
+import 'package:aave_liquidator/contract_interface/aave_lending_pool_event_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_reserve_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_user_manager.dart';
 import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
@@ -13,7 +14,7 @@ import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
 
 final log = getLogger('main');
 void main() async {
-  Logger.level = Level.debug;
+  Logger.level = Level.verbose;
   log.v('Success, We\'re In!');
 
   /// Load env and config files.
@@ -79,7 +80,7 @@ void main() async {
       log.d('asset config list: $_assetConfigList');
 
       /// get asset price from chainlink
-      final List<Map<String, double>> _oracleAssetPriceList =
+      final List<double> _oracleAssetPriceList =
           await _oracle.getAllAssetsPrice(_assetsList);
       log.d('oracle pricelist: $_oracleAssetPriceList');
 
@@ -97,7 +98,9 @@ void main() async {
             assetAddress: _assetsList[i].toString(),
             assetConfig: _assetConfigList[i],
             aaveAssetPrice: _assetPriceList[i],
-            assetPrice: _oracleAssetPriceList.first['USD']!,
+            assetPrice: _oracleAssetPriceList[i] == -1
+                ? _assetPriceList[i]
+                : _oracleAssetPriceList[i],
           ));
         } else {
           reserveDataList[index] = AaveReserveData(
@@ -105,7 +108,9 @@ void main() async {
             assetAddress: _assetsList[i].toString(),
             assetConfig: _assetConfigList[i],
             aaveAssetPrice: _assetPriceList[i],
-            assetPrice: _oracleAssetPriceList.first['USD']!,
+            assetPrice: _oracleAssetPriceList[i] == -1
+                ? _assetPriceList[i]
+                : _oracleAssetPriceList[i],
           );
         }
       }
@@ -119,22 +124,30 @@ void main() async {
 
   await _pollReserveData();
 
-  // get new users by querying past borrow events
-  // update known users
+  /// Poll Aave for new users
+  ///
+  /// Update list of users in db.
+  /// TODO: create 24hr cron repeat interval.
+  _pollNewUsers() async {
+    log.i('_pollNewUsers');
+  }
+
+  // await _pollNewUsers();
 
   // every 30 min,
   // get assets price
   // convert price in ETH
 
-  // Listens for asset price change
+  /// Listens for asset price change
   // update new price in db
-  // _oracle.listenForEthPriceUpdate().onData((data) {
-  //   print('data received');
+  _oracle.priceListener();
+  _oracle.listenForEthPriceUpdate().onData((data) {
+    print('data received: ${data.current}');
 
-  //   _mongodService.updateReserveAssetPrice(
-  //       assetAddress: _config.ethTokenAddress,
-  //       newAssetPrice: data.current.toDouble());
-  // });
+    // _mongodService.updateReserveAssetPrice(
+    //     assetAddress: _config.ethTokenAddress,
+    //     newAssetPrice: data.current.toDouble());
+  });
 
   /// for every asset available on aave
   /// listen for price emmit

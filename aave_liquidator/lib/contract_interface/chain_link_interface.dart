@@ -24,15 +24,33 @@ class ChainLinkPriceOracle {
     _config = config;
     _mongodService = mongod;
     _chainlinkContracts = chainlinkContracts;
+    getEthPrice();
+  }
+
+  getEthPrice() async {
+    var ethPrice =
+        await _chainlinkContracts.ethUsdOracleContract.latestAnswer();
+    log.i('ethPrice: $ethPrice');
+  }
+
+  priceListener()  {
+    log.i('listenning for price update');
+   
+    _chainlinkContracts.ethUsdOracleContract
+        .answerUpdatedEvents()
+        .listen((event) {
+    log.w('new price: ${event.current}');
+    });
   }
 
   /// listen for eth price.
   StreamSubscription<AnswerUpdated> listenForEthPriceUpdate() {
-    log.i('listenning for price change');
+    log.i('listenForEthPriceUpdate');
+
     return _chainlinkContracts.ethUsdOracleContract
         .answerUpdatedEvents()
         .listen((newPrice) {
-      log.i('new price eth price');
+      log.w('new price eth price');
       double _currentPrice = newPrice.current.toDouble();
       double _previousPrice = 1; //TODO: get pricefrom db.
       getPercentChange(
@@ -40,9 +58,9 @@ class ChainLinkPriceOracle {
         previousPrice: _previousPrice,
       );
       // update asset price in db
-      _mongodService.updateReserveAssetPrice(
-          assetAddress: '_config.ethTokenAddress',
-          newAssetPrice: _currentPrice);
+      // _mongodService.updateReserveAssetPrice(
+      //     assetAddress: '_config.ethTokenAddress',
+      //     newAssetPrice: _currentPrice);
     });
   }
 
@@ -59,29 +77,34 @@ class ChainLinkPriceOracle {
   }
 
   /// query contract for lastest price of asset
-  /// TODO: get asset price. this will required to use mainnet
-  Future<List<Map<String, double>>> getAllAssetsPrice(
+
+  Future<List<double>> getAllAssetsPrice(
       List<EthereumAddress> assetAddressList) async {
+    log.i('getAllAssetsPrice');
     try {
-      // await _chainlinkContracts.ethUsdOracleContract.latestAnswer();
-      log.i('getAllAssetsPrice');
       List<double> assetPriceList = [];
-      List<double> assetPriceListInEth = [];
-      for (var asset in assetAddressList) {
-        assetPriceList.add(1.0);
-        assetPriceListInEth.add(convertToEth(1));
+
+      for (EthereumAddress address in assetAddressList) {
+        final price = await _chainlinkContracts.feedRegistryContract
+            .latestAnswer(
+                address, EthereumAddress.fromHex(_config.denominationEth))
+            .catchError((onError) {
+          log.e('not found: $address');
+          return Future.value(BigInt.from(-1));
+        });
+        log.v('price data: $price');
+        assetPriceList.add(price.toDouble());
       }
-      return [
-        {'USD': assetPriceList.first, 'ETH': assetPriceListInEth.first}
-      ];
+
+      return assetPriceList;
     } catch (e) {
       log.e('error getting price from oracle: $e');
       throw 'no price from oracle';
     }
   }
 
-  /// convert asset price to ETH
-  double convertToEth(double assetPrice) {
-    return 10.0;
-  }
+  // /// convert asset price to ETH
+  // double convertToEth(double assetPrice) {
+  //   return 10.0;
+  // }
 }

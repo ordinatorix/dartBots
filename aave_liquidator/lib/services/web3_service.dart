@@ -56,7 +56,7 @@ class Web3Service {
   Future<void> _connectViaRpcApi() async {
     log.i('connecting using Infura');
     try {
-      web3Client = Web3Client(_config.kovanApiUrl, _httpClient);
+      web3Client = Web3Client(_config.mainnetApiUrl, _httpClient);
       chainId = await web3Client.getNetworkId();
       log.d('current chainID: $chainId');
       _isListenning = await web3Client.isListeningForNetwork();
