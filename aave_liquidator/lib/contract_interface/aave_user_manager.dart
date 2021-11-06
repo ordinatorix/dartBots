@@ -4,6 +4,7 @@ import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/helper/user_parser.dart';
 import 'package:aave_liquidator/logger.dart';
+import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 
@@ -27,6 +28,29 @@ class AaveUserManager {
   late List aaveReserveList; // TODO: fetch from db.
 
   /// get reservelist from db.
+
+  /// Query specific users
+  /// TODO: using [getUserAccountData] update the db with new data from userwith  UltraLow Health Factor (ULHF).
+  ///
+
+  /// Extract user from borrow event
+  List<String> _extractUserFromBorrowEvent(List<AaveBorrowEvent> eventsList) {
+    log.i('extracting user address from borrow event');
+    if (eventsList.isNotEmpty) {
+      List<String> _userList = [];
+      for (var event in eventsList) {
+        if (!_userList.contains(event.onBehalfOf)) {
+          _userList.add(event.onBehalfOf);
+          log.v('adding ${event.onBehalfOf} to list');
+        }
+      }
+
+      return _userList;
+    } else {
+      log.w('events list was null');
+      return [];
+    }
+  }
 
   /// Get user account data from Aave.
   Future<List<Map<String, dynamic>>> getUserAccountData(
