@@ -43,11 +43,11 @@ class Config {
   final EthereumAddress feedRegistryContractAddress =
       EthereumAddress.fromHex('0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf');
 
-  final EthereumAddress ethUsdOracleContractAddressProxy =
-      EthereumAddress.fromHex('0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419');
+  // final EthereumAddress ethUsdOracleContractAddressProxy =
+  //     EthereumAddress.fromHex('0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419');
 
-  final EthereumAddress ethUsdOracleContractAddress =
-      EthereumAddress.fromHex('0x37bC7498f4FF12C19678ee8fE19d713b87F6a9e6');
+  // final EthereumAddress ethUsdOracleContractAddress =
+  //     EthereumAddress.fromHex('0x37bC7498f4FF12C19678ee8fE19d713b87F6a9e6');
 
   // final EthereumAddress aaveEthOracleContractAddress =
   //     EthereumAddress.fromHex('hex');
@@ -120,6 +120,7 @@ class Config {
   /// Token Symbol
   final String ethToken = 'ETH';
   final String denominationEth = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+  final String denominationUSD = '0x0000000000000000000000000000000000000348';
   //TODO:  add other reserve token symbol
 
   /// Encoded topics

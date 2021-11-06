@@ -36,6 +36,10 @@ void main() async {
   final ChainlinkContracts _chainlinkContracts =
       ChainlinkContracts(_web3, _config);
 
+  /// wait for chainlink contracts to be ready.
+  await _chainlinkContracts.isReady;
+
+  /// setup oracle.
   final ChainLinkPriceOracle _oracle = ChainLinkPriceOracle(
     chainlinkContracts: _chainlinkContracts,
     config: _config,

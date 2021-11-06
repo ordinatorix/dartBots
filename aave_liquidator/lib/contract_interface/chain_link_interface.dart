@@ -1,11 +1,12 @@
 import 'dart:async';
 
-import 'package:aave_liquidator/abi/chainlink_abi/aggregator_proxy_abi/chainlink_eth_usd_oracle.g.dart';
+import 'package:aave_liquidator/abi/chainlink_abi/aggregator_abi/chainlink_eth_denomination_price_aggregator.g.dart';
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:web3dart/web3dart.dart';
+import 'package:aave_liquidator/token_address.dart' as token;
 
 final log = getLogger('ChainLinkPriceOracle');
 
@@ -24,22 +25,26 @@ class ChainLinkPriceOracle {
     _config = config;
     _mongodService = mongod;
     _chainlinkContracts = chainlinkContracts;
-    getEthPrice();
+    // getEthPrice();
+    getDaiPrice();
   }
 
-  getEthPrice() async {
-    var ethPrice =
-        await _chainlinkContracts.ethUsdOracleContract.latestAnswer();
-    log.i('ethPrice: $ethPrice');
+  getDaiPrice() async {
+    var daiPrice = await _chainlinkContracts.daiEthAggregator.latestAnswer();
+    log.i('price of DAI in ETH: $daiPrice');
   }
+
+  // getEthPrice() async {
+  //   var ethPrice =
+  //       await _chainlinkContracts.ethUsdOracleContract.latestAnswer();
+  //   log.i('ethPrice: $ethPrice');
+  // }
 
   priceListener() {
     log.i('listenning for price update');
 
-    _chainlinkContracts.ethUsdOracleContract
-        .answerUpdatedEvents()
-        .listen((event) {
-      log.w('new price: ${event.current}');
+    _chainlinkContracts.daiEthAggregator.answerUpdatedEvents().listen((event) {
+      log.w('new dai price in eth: ${event.current}');
     });
   }
 
@@ -47,10 +52,10 @@ class ChainLinkPriceOracle {
   StreamSubscription<AnswerUpdated> listenForEthPriceUpdate() {
     log.i('listenForEthPriceUpdate');
 
-    return _chainlinkContracts.ethUsdOracleContract
+    return _chainlinkContracts.daiEthAggregator
         .answerUpdatedEvents()
         .listen((newPrice) {
-      log.w('new price eth price');
+      log.w('new price of dai in eth $newPrice');
       double _currentPrice = newPrice.current.toDouble();
       double _previousPrice = 1; //TODO: get pricefrom db.
       getPercentChange(
