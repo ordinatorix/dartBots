@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:aave_liquidator/abi/chainlink_eth_usd_oracle.g.dart';
+import 'package:aave_liquidator/abi/chainlink_abi/aggregator_proxy_abi/chainlink_eth_usd_oracle.g.dart';
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
@@ -33,13 +33,13 @@ class ChainLinkPriceOracle {
     log.i('ethPrice: $ethPrice');
   }
 
-  priceListener()  {
+  priceListener() {
     log.i('listenning for price update');
-   
+
     _chainlinkContracts.ethUsdOracleContract
         .answerUpdatedEvents()
         .listen((event) {
-    log.w('new price: ${event.current}');
+      log.w('new price: ${event.current}');
     });
   }
 

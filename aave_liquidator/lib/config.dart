@@ -1,5 +1,5 @@
 // import 'dart:io';
-
+import 'package:aave_liquidator/token_address.dart';
 import 'package:dotenv/dotenv.dart';
 // import 'package:path/path.dart';
 import 'package:web3dart/web3dart.dart';
@@ -12,45 +12,110 @@ class Config {
   /// Aave Mainnet Contract addresses
   /// TODO: group address by network
   ///
-  // final EthereumAddress lendingPoolProxyContractAddress =
-  //     EthereumAddress.fromHex('0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9'); //
-
-  // final EthereumAddress lendingPoolContractAddress =
-  //     EthereumAddress.fromHex('0xC6845a5C768BF8D7681249f8927877Efda425baf'); //
-
-  // final EthereumAddress protocolDataProviderContractAddress =
-  //     EthereumAddress.fromHex('0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'); //
-
-  // final EthereumAddress aavePriceOracleContractAddress =
-  //     EthereumAddress.fromHex('0xA50ba011c48153De246E5192C8f9258A2ba79Ca9'); //
-
-  /// Aave Kovan contract address
   final EthereumAddress lendingPoolProxyContractAddress =
-      EthereumAddress.fromHex('0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe');
+      EthereumAddress.fromHex('0x7d2768dE32b0b80b7a3454c06BdAc94A69DDc7A9'); //
 
   final EthereumAddress lendingPoolContractAddress =
-      EthereumAddress.fromHex('0x2646fcf7f0abb1ff279ed9845ade04019c907ebe');
+      EthereumAddress.fromHex('0xC6845a5C768BF8D7681249f8927877Efda425baf'); //
 
   final EthereumAddress protocolDataProviderContractAddress =
-      EthereumAddress.fromHex('0x3c73A5E5785cAC854D468F727c606C07488a29D6');
+      EthereumAddress.fromHex('0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'); //
 
   final EthereumAddress aavePriceOracleContractAddress =
-      EthereumAddress.fromHex('0xB8bE51E6563BB312Cbb2aa26e352516c25c26ac1');
+      EthereumAddress.fromHex('0xA50ba011c48153De246E5192C8f9258A2ba79Ca9'); //
+
+  /// Aave Kovan contract address
+  // final EthereumAddress lendingPoolProxyContractAddress =
+  //     EthereumAddress.fromHex('0xE0fBa4Fc209b4948668006B2bE61711b7f465bAe');
+
+  // final EthereumAddress lendingPoolContractAddress =
+  //     EthereumAddress.fromHex('0x2646fcf7f0abb1ff279ed9845ade04019c907ebe');
+
+  // final EthereumAddress protocolDataProviderContractAddress =
+  //     EthereumAddress.fromHex('0x3c73A5E5785cAC854D468F727c606C07488a29D6');
+
+  // final EthereumAddress aavePriceOracleContractAddress =
+  //     EthereumAddress.fromHex('0xB8bE51E6563BB312Cbb2aa26e352516c25c26ac1');
 
   /// Chainlink Mainnet contract addresses
   ///
 
-  // final EthereumAddress feedRegistryContractAddress =
-  //     EthereumAddress.fromHex('0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf');
+  final EthereumAddress feedRegistryContractAddress =
+      EthereumAddress.fromHex('0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf');
 
-  // final EthereumAddress ethUsdOracleContractAddress =
-  //     EthereumAddress.fromHex('0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419');
+  final EthereumAddress ethUsdOracleContractAddressProxy =
+      EthereumAddress.fromHex('0x5f4ec3df9cbd43714fe2740f5e3616155c5b8419');
 
   final EthereumAddress ethUsdOracleContractAddress =
-      EthereumAddress.fromHex('0x9326BFA02ADD2366b30bacB125260Af641031331');
+      EthereumAddress.fromHex('0x37bC7498f4FF12C19678ee8fE19d713b87F6a9e6');
 
-  final EthereumAddress feedRegistryContractAddress =
-      EthereumAddress.fromHex('0xAa7F6f7f507457a1EE157fE97F6c7DB2BEec5cD0');
+  // final EthereumAddress aaveEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress usdtEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress wbtcEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress yfiEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress zrxEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress uniEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress batEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress busdEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress enjEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress kncEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress linkEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress manaEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress mkrEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress renEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress snxEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress susdEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress tusdEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress usdcEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress crvEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress gusdEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress balEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress xsushiEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress renFilEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress raiEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress amplEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress usdpEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress dpiEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress fraxEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+  // final EthereumAddress feiEthOracleContractAddress =
+  //     EthereumAddress.fromHex('hex');
+
+  /// Chainlink Kovan contract address.
+  // final EthereumAddress ethUsdOracleContractAddressProxy =
+  //     EthereumAddress.fromHex('0x9326BFA02ADD2366b30bacB125260Af641031331');
+  // final EthereumAddress ethUsdOracleContractAddress =
+  //     EthereumAddress.fromHex('0x10b3c106c4ed7d22b0e7abe5dc43bdfa970a153c');
+
+  // final EthereumAddress feedRegistryContractAddress =
+  //     EthereumAddress.fromHex('0xAa7F6f7f507457a1EE157fE97F6c7DB2BEec5cD0');
 
   /// Token Symbol
   final String ethToken = 'ETH';

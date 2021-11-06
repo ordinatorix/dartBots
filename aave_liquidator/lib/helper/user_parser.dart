@@ -1,4 +1,4 @@
-import 'package:aave_liquidator/abi/aave_lending_pool.g.dart';
+import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:web3dart/web3dart.dart';

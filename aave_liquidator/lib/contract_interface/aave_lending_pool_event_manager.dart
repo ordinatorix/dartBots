@@ -1,4 +1,3 @@
-import 'package:aave_liquidator/abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
@@ -6,7 +5,6 @@ import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_deposit_event.dart';
 import 'package:aave_liquidator/model/aave_repay_event.dart';
 import 'package:aave_liquidator/model/aave_withdraw_event.dart';
-import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:aave_liquidator/helper/aave_event_parser.dart';

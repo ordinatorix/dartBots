@@ -1,4 +1,4 @@
-import 'package:aave_liquidator/abi/aave_protocol_data_provider.g.dart';
+import 'package:aave_liquidator/abi/aave_abi/aave_protocol_data_provider.g.dart';
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/logger.dart';
 
@@ -143,7 +143,6 @@ class AaveReserveManager {
           assetAddress: asset.toString(),
           assetConfig: res,
           assetPrice: 0,
-          
           aaveAssetPrice: 0,
         );
         // add to db
