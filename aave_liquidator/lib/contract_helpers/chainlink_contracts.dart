@@ -60,7 +60,7 @@ class ChainlinkContracts {
 
   late Chainlink_eth_denomination_price_aggregator daiEthAggregator;
 
-  late ContractEvent ethUsdAnswerUpdatedEvent;
+  late ContractEvent daiEthAnswerUpdatedEvent;
 
   _setupContracts() async {
     log.i('_setupContracts');
@@ -288,14 +288,14 @@ class ChainlinkContracts {
         client: _web3service.web3Client,
         chainId: _web3service.chainId,
       );
-      await _setupFeed();
+      await _setupPriceFeed();
     } catch (e) {
       log.e('error setting up feed registry: $e');
     }
   }
 
-  _setupFeed() async {
-    log.i('_setupFeed');
+  _setupPriceFeed() async {
+    log.i('_setupPriceFeed');
 // TODO: loop for all known tokens
     try {
       /// get aggregator contract address.
@@ -311,7 +311,7 @@ class ChainlinkContracts {
         client: _web3service.web3Client,
         chainId: _web3service.chainId,
       );
-      daiEthAggregator.self.event('AnswerUpdated');
+      // daiEthAnswerUpdatedEvent = daiEthAggregator.self.event('AnswerUpdated');
       pare.complete(true);
     } catch (e) {
       log.e('error setting up aggregator: $e');

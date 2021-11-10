@@ -4,6 +4,7 @@ import 'package:aave_liquidator/abi/chainlink_abi/aggregator_abi/chainlink_eth_d
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
+import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:aave_liquidator/token_address.dart' as token;
@@ -49,28 +50,27 @@ class ChainLinkPriceOracle {
   }
 
   /// listen for eth price.
-  StreamSubscription<AnswerUpdated> listenForEthPriceUpdate() {
+  listenForEthPriceUpdate() {
+    //TODO: price listeners
     log.i('listenForEthPriceUpdate');
-
-    return _chainlinkContracts.daiEthAggregator
-        .answerUpdatedEvents()
-        .listen((newPrice) {
-      log.w('new price of dai in eth $newPrice');
-      double _currentPrice = newPrice.current.toDouble();
-      double _previousPrice = 1; //TODO: get pricefrom db.
-      getPercentChange(
-        currentPrice: _currentPrice,
-        previousPrice: _previousPrice,
-      );
-      // update asset price in db
-      // _mongodService.updateReserveAssetPrice(
-      //     assetAddress: '_config.ethTokenAddress',
-      //     newAssetPrice: _currentPrice);
-    });
   }
 
   /// Listen for DAI price.
-  listenForDaiPriceUpdate() {}
+  listenForDaiPriceUpdate() {
+    _chainlinkContracts.daiEthAggregator
+        .answerUpdatedEvents()
+        .listen((newPrice) async {
+      /// get previous asset reserve data from db.
+      List<AaveReserveData> reserveList =
+          await _mongodService.getReservesFromDb();
+
+      /// if price increase, get users with token as debt
+      /// if price decrease get users with dai as collateral
+      log.w('new price of dai in eth $newPrice');
+
+      /// calculate health factor
+    });
+  }
 
   /// Calculate percent change in price from previous aave oracle price.
   getPercentChange({
