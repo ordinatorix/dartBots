@@ -58,9 +58,9 @@ class Web3Service {
     try {
       web3Client = Web3Client(_config.mainnetApiUrl, _httpClient);
       chainId = await web3Client.getNetworkId();
-      log.d('current chainID: $chainId');
+      log.v('current chainID: $chainId');
       _isListenning = await web3Client.isListeningForNetwork();
-      log.d('web3Client is listening: $_isListenning');
+      log.v('web3Client is listening: $_isListenning');
     } catch (e) {
       log.e('error connecting to lockchain: $e');
     }
@@ -70,11 +70,22 @@ class Web3Service {
   _getCredentials() {
     log.i('getting credentials');
     credentials = EthPrivateKey.fromHex(env['WALLET_PRIVATE_KEY']!);
+    log.v('credential address: ${credentials.address}');
   }
 
-  getCurrentBalance() async {
+  /// Get current wallet balance
+  Future<int> getCurrentBalance() async {
     log.i('getting balance');
     final balance = await web3Client.getBalance(credentials.address);
-    log.d(balance);
+    log.v('balance: $balance');
+    return balance.getInWei.toInt();
+  }
+
+// Get current Block
+  Future<int> getCurrentBlock() async {
+    log.i('getCurrentBlock');
+    final blockNumber = await web3Client.getBlockNumber();
+    log.v('BlockNumber: $blockNumber');
+    return blockNumber;
   }
 }

@@ -84,7 +84,7 @@ class AaveReserveManager {
         for (EthereumAddress asset in assetAddress)
           getAaveReserveConfigurationData(asset: asset),
       ]);
-      log.d('config list: $_reserveConfigList');
+
       return _reserveConfigList;
     } catch (e) {
       log.e('error getting all reserve asset config data: $e');

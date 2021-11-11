@@ -20,6 +20,11 @@ class AaveReserveData {
         "assetPrice": assetPrice,
         "aaveAssetPrice": aaveAssetPrice,
       };
+
+  @override
+  String toString() {
+    return 'symbol: $assetSymbol, address: $assetAddress';
+  }
 }
 
 class AaveReserveConfigData {
@@ -33,4 +38,9 @@ class AaveReserveConfigData {
         "liquidationBonus": liquidationBonus,
         "liquidationThreshold": liquidationThreshold,
       };
+
+  @override
+  String toString() {
+    return 'liquidation bonus: $liquidationBonus, liquidation threshold: $liquidationThreshold';
+  }
 }

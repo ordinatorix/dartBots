@@ -25,9 +25,31 @@ class AaveLendingPoolEventManager {
   }
   late Web3Service _web3service;
   late Config _config;
-  // late MongodService _mongodService;
+
   late AaveContracts _aaveContracts;
   late AaveEventParser _eventParser;
+
+  /// Extract user address from borrow event
+  ///
+  /// Returns a [List] of user addresses as [String]  .
+  List<String> extractUserAddressFromBorrowEvent(
+      List<AaveBorrowEvent> eventsList) {
+    log.i('extracting user address from borrow event');
+    if (eventsList.isNotEmpty) {
+      List<String> _userList = [];
+      for (var event in eventsList) {
+        if (!_userList.contains(event.onBehalfOf)) {
+          _userList.add(event.onBehalfOf);
+          log.v('adding ${event.onBehalfOf} to list');
+        }
+      }
+      log.v('_userList: $_userList');
+      return _userList;
+    } else {
+      log.w('events list was null');
+      return [];
+    }
+  }
 
   /// Query events by contract, filtering by block and address
   queryEventsByContract() async {

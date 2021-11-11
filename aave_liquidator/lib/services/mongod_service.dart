@@ -82,16 +82,56 @@ class MongodService {
 
   /// Update existing user document with new one.
   /// Adds document if does not exist.
-  updateUser(Map<String, dynamic> userData) async {
+  updateUser(AaveUserAccountData userData) async {
     log.i('replaceUserData | userData: $userData');
     try {
+      final _jsonUserData = userData.toJson();
       await _userStore.replaceOne(
-        where.eq('userAddress', userData['userAddress']),
-        userData,
+        where.eq('userAddress', _jsonUserData['userAddress']),
+        _jsonUserData,
         upsert: true,
       );
     } catch (e) {
       log.e('error replacing user data: $e');
+    }
+  }
+
+  bulkUpdateUsers(List<AaveUserAccountData> userDataList) async {
+    log.i('bulkUpdateUsers');
+    try {
+      var bulk = OrderedBulk(_userStore);
+
+      for (AaveUserAccountData userData in userDataList) {
+        final _jsonUserData = userData.toJson();
+        Map<String, dynamic>? data = await _userStore
+            .findOne(where.eq('userAddress', _jsonUserData['userAddress']));
+
+        if (data != null) {
+          bulk.replaceOne(ReplaceOneStatement(
+            {
+              "userAddress": data['userAddress'],
+              "totalCollateralEth": data['totalCollateralEth'],
+              "totalDebtETH": data['totalDebtETH'],
+              "availableBorrowsETH": data['availableBorrowsETH'],
+              "currentLiquidationThreshold":
+                  data['currentLiquidationThreshold'],
+              "ltv": data['ltv'],
+              "healthFactor": data['healthFactor'],
+              "collateralReserve": data['collateralReserve'],
+              "variableDebtReserve": data['variableDebtReserve'],
+              "stableDebtReserve": data['stableDebtReserve'],
+            },
+            _jsonUserData,
+            upsert: true,
+          ));
+        } else {
+          bulk.insertOne(_jsonUserData);
+        }
+      }
+      var ret = await bulk.executeBulk();
+      log.d('bulk returned: $ret');
+    } catch (e) {
+      log.e('error bulk updating users: $e');
     }
   }
 
@@ -162,6 +202,14 @@ class MongodService {
   //-------------------RESERVES----------------------///
   //
   //
+
+  /// Get reserve count.
+  Future<int> getReserveCount() async {
+    log.i('getReserveCount');
+    final count = await _reserveStore.count();
+    log.v('count: $count');
+    return count;
+  }
 
   /// get reserves from _db
   ///
