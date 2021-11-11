@@ -1,12 +1,12 @@
 import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/logger.dart';
+import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('UserParser');
 
 class UserParser {
-  late List aaveReserveList; // TODO: fetch from db.
   /// parse user data
   AaveUserAccountData parseUserAccountData({
     required EthereumAddress userAddress,
@@ -33,7 +33,10 @@ class UserParser {
   }
 
   /// format user data to write to file
-  Map<String, List> mixAndMatch(List pairList) {
+  Map<String, List> mixAndMatch({
+    required List userConfig,
+    required List<AaveReserveData> aaveReserveList,
+  }) {
     log.v('mix and match');
 
     /// for each reserve pair in the list,
@@ -41,20 +44,23 @@ class UserParser {
     List<String> collateralReserve = [];
     List<String> debtReserve = [];
     for (var i = 0; i < aaveReserveList.length; i++) {
-      if (pairList[i] == '10') {
-        log.v('adding ${aaveReserveList[i]}to collateral');
+      if (userConfig[i] == '10') {
+        log.v('adding ${aaveReserveList[i].assetAddress}to collateral');
 
         /// add reserve address to colateral list
-        collateralReserve.add(aaveReserveList[i].toString());
-      } else if (pairList[i] == '01') {
-        log.v('adding ${aaveReserveList[1]} to debt');
+        collateralReserve.add(aaveReserveList[i].assetAddress);
+      } else if (userConfig[i] == '01') {
+        log.v('adding ${aaveReserveList[1].assetAddress} to debt');
 
         /// add reserve address to debt list
-        debtReserve.add(aaveReserveList[i].toString());
-      } else if (pairList[i] == '11') {
+        debtReserve.add(aaveReserveList[i].assetAddress);
+      } else if (userConfig[i] == '11') {
+        log.v(
+            'adding ${aaveReserveList[1].assetAddress} to collateral and debt');
+
         /// add reserve address to collaterral and debt list.
-        collateralReserve.add(aaveReserveList[i].toString());
-        debtReserve.add(aaveReserveList[i].toString());
+        collateralReserve.add(aaveReserveList[i].assetAddress);
+        debtReserve.add(aaveReserveList[i].assetAddress);
       }
     }
     return {'collateral': collateralReserve, 'debt': debtReserve};

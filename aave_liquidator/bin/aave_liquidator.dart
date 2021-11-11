@@ -14,7 +14,7 @@ import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
 
 final log = getLogger('main');
 void main() async {
-  Logger.level = Level.verbose;
+  Logger.level = Level.debug;
   log.v('Success, We\'re In!');
 
   /// Load env and config files.
@@ -52,6 +52,19 @@ void main() async {
     aaveContracts: _aaveContracts,
   );
 
+  final AaveUserManager _userManager = AaveUserManager(
+    config: _config,
+    mongod: _mongodService,
+    aaveContracts: _aaveContracts,
+  );
+
+  final AaveLendingPoolEventManager _lendingPoolEventManager =
+      AaveLendingPoolEventManager(
+    config: _config,
+    web3: _web3,
+    aaveContracts: _aaveContracts,
+  );
+
   /// Poll Aave reserves
   ///
   /// This is a scheduled task to update reserve data periodically
@@ -64,29 +77,30 @@ void main() async {
       /// get reserve data from db.
       final List<AaveReserveData> reserveDataList =
           await _mongodService.getReservesFromDb();
-      log.d('reserve list: $reserveDataList');
+      log.v('reserve list in db: $reserveDataList');
 
       /// get list of assets from aave.
       final _assetsList = await _reserveManager.getAaveReserveList();
+      log.v('assets list: $_assetsList');
 
       /// get aave reserve assets symbol
       final List _assetSymbolList = await _reserveManager.getTokenSymbol();
-      log.d(_assetSymbolList);
+      log.v('symbol list: $_assetSymbolList');
 
       /// get price from aave
       final _assetPriceList =
           await _reserveManager.getAllReserveAssetPrice(_assetsList);
-      log.d('asset price list: $_assetPriceList');
+      log.v('asset price list: $_assetPriceList');
 
       /// get asset config from aave
       final _assetConfigList =
           await _reserveManager.getAllReserveAssetConfigData(_assetsList);
-      log.d('asset config list: $_assetConfigList');
+      log.v('asset config list: $_assetConfigList');
 
       /// get asset price from chainlink
       final List<double> _oracleAssetPriceList =
           await _oracle.getAllAssetsPrice(_assetsList);
-      log.d('oracle pricelist: $_oracleAssetPriceList');
+      log.v('oracle pricelist: $_oracleAssetPriceList');
 
       /// update [reserveData] with new data
       for (int i = 0; i < _assetsList.length; i++) {
@@ -120,13 +134,14 @@ void main() async {
       }
 
       /// update db with new reserve data.
-      await _mongodService.resetReserveData(reserveDataList);
+      final reset = await _mongodService.resetReserveData(reserveDataList);
+      log.v('done updating db with reserve: $reset');
     } catch (e) {
-      log.e('error pollig: $e');
+      log.e('error polling: $e');
     }
   }
 
-  await _pollReserveData();
+  // await _pollReserveData();
 
   /// Poll Aave for new users
   ///
@@ -134,9 +149,23 @@ void main() async {
   /// TODO: create 24hr cron repeat interval.
   _pollNewUsers() async {
     log.i('_pollNewUsers');
+
+    /// get current block
+    final _currentBlock = await _web3.getCurrentBlock();
+
+    ///TODO: get borrow events since last know block in increments of 1000
+    ///
+    final _fromBlock = _currentBlock - 1000;
+    final _borrowEvents =
+        await _lendingPoolEventManager.queryBorrowEvent(fromBlock: _fromBlock);
+    log.d('_borrowEvents found :${_borrowEvents.length}');
+    final _userList = _lendingPoolEventManager
+        .extractUserAddressFromBorrowEvent(_borrowEvents);
+
+    await _userManager.getUserAccountData(userList: _userList);
   }
 
-  // await _pollNewUsers();
+  await _pollNewUsers();
 
   // every 30 min,
   // get assets price
@@ -145,13 +174,13 @@ void main() async {
   /// Listens for asset price change
   // update new price in db
   _oracle.priceListener();
-  _oracle.listenForEthPriceUpdate().onData((data) {
-    print('data received: ${data.current}');
+  // _oracle.listenForEthPriceUpdate().onData((data) {
+  //   print('data received: ${data.current}');
 
-    // _mongodService.updateReserveAssetPrice(
-    //     assetAddress: _config.ethTokenAddress,
-    //     newAssetPrice: data.current.toDouble());
-  });
+  //   // _mongodService.updateReserveAssetPrice(
+  //   //     assetAddress: _config.ethTokenAddress,
+  //   //     newAssetPrice: data.current.toDouble());
+  // });
 
   /// for every asset available on aave
   /// listen for price emmit

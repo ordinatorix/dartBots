@@ -4,28 +4,31 @@ import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/helper/user_parser.dart';
 import 'package:aave_liquidator/logger.dart';
-import 'package:aave_liquidator/model/aave_borrow_event.dart';
+import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 
 import 'package:web3dart/web3dart.dart';
 
-final log = getLogger('AaveUserLiquidator');
+final log = getLogger('AaveUserManager');
 
 class AaveUserManager {
   late MongodService _store;
   late Config _config;
   final UserParser _parser = UserParser();
   late AaveContracts _aaveContracts;
+
   AaveUserManager({
     required Config config,
     required AaveContracts aaveContracts,
     required MongodService mongod,
   }) {
+    _store = mongod;
+    _config = config;
     _aaveContracts = aaveContracts;
   }
 
-  late List aaveReserveList; // TODO: fetch from db.
+  late List<AaveReserveData> _aaveReserveList;
 
   /// get reservelist from db.
 
@@ -33,35 +36,21 @@ class AaveUserManager {
   /// TODO: using [getUserAccountData] update the db with new data from userwith  UltraLow Health Factor (ULHF).
   ///
 
-  /// Extract user from borrow event
-  List<String> _extractUserFromBorrowEvent(List<AaveBorrowEvent> eventsList) {
-    log.i('extracting user address from borrow event');
-    if (eventsList.isNotEmpty) {
-      List<String> _userList = [];
-      for (var event in eventsList) {
-        if (!_userList.contains(event.onBehalfOf)) {
-          _userList.add(event.onBehalfOf);
-          log.v('adding ${event.onBehalfOf} to list');
-        }
-      }
-
-      return _userList;
-    } else {
-      log.w('events list was null');
-      return [];
-    }
-  }
-
   /// Get user account data from Aave.
-  Future<List<Map<String, dynamic>>> getUserAccountData(
+  ///
+  /// Requires a list of users
+  Future<List<AaveUserAccountData>> getUserAccountData(
       {required List<String> userList}) async {
+    log.i('getUserAccountData');
     try {
       if (userList.isEmpty) {
         throw 'no user given';
       }
-      log.i(
+      _aaveReserveList = await _store.getReservesFromDb();
+
+      log.v(
           'getting user account data of ${userList.length} users.\n Please wait...');
-      List<Map<String, dynamic>> _aaveUserList = [];
+      List<AaveUserAccountData> _aaveUserList = [];
 
       /// Iterate throught the list of users and get their user account data.
       for (var user in userList) {
@@ -73,24 +62,20 @@ class AaveUserManager {
         /// Only keep users with a health factor below [_config.focusHealthFactor].
         if (userAccountData.healthFactor.toDouble() <
             _config.focusHealthFactor) {
-          log.d('found accounts with low Health factor');
-
           AaveUserReserveData _userReserveData =
-              await getAaveUserReserveData(userAddress: _userAddress);
+              await _getAaveUserReserveData(userAddress: _userAddress);
           AaveUserAccountData _userData = _parser.parseUserAccountData(
               userAddress: _userAddress,
               userAccountData: userAccountData,
               userReserveData: _userReserveData);
-          log.d('user data in json: ${_userData.toJson()}');
-          // String jsonEncodedUserData = jsonEncode(_userData);
-          _aaveUserList.add(_userData.toJson());
 
-          //TODO: upload to each user to db?
-
-          _store.updateUser(_userData.toJson());
+          _aaveUserList.add(_userData);
         }
       }
-      log.i('Found ${_aaveUserList.length} users at risk of liquidation.');
+
+      /// Bulk update db.
+      await _store.bulkUpdateUsers(_aaveUserList);
+      log.v('Found ${_aaveUserList.length} users at risk of liquidation.');
       return _aaveUserList;
     } catch (e) {
       log.e('error getting user account data: $e');
@@ -99,13 +84,16 @@ class AaveUserManager {
   }
 
   /// Get user reserve data for specific asset.
-  Future<AaveUserReserveData> getAaveUserReserveData({
+  Future<AaveUserReserveData> _getAaveUserReserveData({
     required EthereumAddress userAddress,
   }) async {
-    log.d('getAaveUserReserveData | user address: $userAddress');
+    log.v('getAaveUserReserveData | user address: $userAddress');
     try {
       List _userConfig = await _getAaveUserConfig(userAddress);
-      Map<String, List> _userReserves = _parser.mixAndMatch(_userConfig);
+      Map<String, List> _userReserves = _parser.mixAndMatch(
+        userConfig: _userConfig,
+        aaveReserveList: _aaveReserveList,
+      );
       AaveUserReserveData _aaveUserReserveData = AaveUserReserveData(
         collateral: {},
         stableDebt: {},
@@ -149,7 +137,7 @@ class AaveUserManager {
           ifAbsent: () => userReserveData.currentStableDebt.toDouble(),
         );
       }
-      log.d('final user reserves: $_aaveUserReserveData');
+
       return _aaveUserReserveData;
     } catch (e) {
       log.e('error getting user reserve data: $e');
@@ -159,13 +147,14 @@ class AaveUserManager {
 
   /// Get user configuration across all reserve from aave.
   Future<List> _getAaveUserConfig(EthereumAddress aaveUser) async {
-    log.v('getting user config | aaveUser: $aaveUser');
+    log.v('_getAaveUserConfig | aaveUser: $aaveUser');
     try {
+      /// Get user configuration data from aave.
       final rawUserConfigList = await _aaveContracts.lendingPoolContract
           .getUserConfiguration(aaveUser);
 
       BigInt userConfig = rawUserConfigList.first;
-      log.d('user config: $userConfig');
+
       List _userReserveList = [];
 
       /// Convert result to binary string.
@@ -175,7 +164,6 @@ class AaveUserManager {
       /// This is needed before splitting into binary pairs.
       /// Pad beginning of string with ["00"] if odd.
       if (userConfigBinary.length % 2 != 0) {
-        log.v('oldR: $userConfigBinary');
         userConfigBinary =
             userConfigBinary.padLeft(userConfigBinary.length + 1, '0');
       }
@@ -184,13 +172,12 @@ class AaveUserManager {
       /// of pairs. If not, pad at beginning of string  with ["0"].
       int numberOfPairs = (userConfigBinary.length / 2).round();
 
-      if (numberOfPairs != aaveReserveList.length) {
-        int diff = (aaveReserveList.length - numberOfPairs).round();
+      if (numberOfPairs != _aaveReserveList.length) {
+        int diff = (_aaveReserveList.length - numberOfPairs).round();
 
         int padLength = (numberOfPairs + diff) * 2;
 
         userConfigBinary = userConfigBinary.padLeft(padLength, '0');
-        log.v('newR: $userConfigBinary ${userConfigBinary.length}');
       }
 
       /// Split list into list of binary pairs.
@@ -204,8 +191,8 @@ class AaveUserManager {
 
       /// Flip the resulting list to match aave reserve list ordering.
       _userReserveList = _userReserveList.reversed.toList();
-      log.d(
-          'userReserveList: $_userReserveList ; lengthRatio: ${_userReserveList.length}:${aaveReserveList.length}');
+      log.v(
+          'userReserveList: $_userReserveList ; lengthRatio: ${_userReserveList.length}:${_aaveReserveList.length}');
 
       return _userReserveList;
     } catch (e) {
