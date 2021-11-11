@@ -5,6 +5,7 @@ import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:mongo_dart/mongo_dart.dart';
+import 'package:aave_liquidator/token_address.dart' as token;
 
 final log = getLogger('MongodService');
 
@@ -132,6 +133,68 @@ class MongodService {
     } catch (e) {
       log.e('error bulk updating users: $e');
     }
+  }
+
+  /// Get users with [tokenAddress] as collateral asset.
+  Future<List> getCollateralUsers(String tokenAddress) async {
+    log.i('getCollateralUsers | token address: $tokenAddress');
+
+    List users = await _userStore
+        .find(where.gt('collateralReserve.$tokenAddress', 0))
+        .map((event) => AaveUserAccountData(
+            userAddress: event['userAddress'],
+            totalCollateralEth: event['totalCollateralEth'],
+            totalDebtETH: event['totalDebtETH'],
+            availableBorrowsETH: event['availableBorrowsETH'],
+            currentLiquidationThreshold: event['currentLiquidationThreshold'],
+            ltv: event['ltv'],
+            healthFactor: event['healthFactor'],
+            collateralReserve: event['collateralReserve'],
+            variableDebtReserve: event['variableDebtReserve'],
+            stableDebtReserve: event['stableDebtReserve']))
+        .toList();
+
+    log.d('collateral users: $users');
+
+    return users;
+  }
+
+  /// Get users with [tokenAddress] as debt asset.
+  Future<List> getDebtUsers(String tokenAddress) async {
+    log.i('getDetUsers | token address: $tokenAddress');
+
+    List users = await _userStore
+        .find({
+          r"$and": [
+            {
+              r"$or": [
+                {
+                  "variableDebtReserve.0xd0a1e359811322d97991e03f863a0c30c2cf029c":
+                      {r"$gt": 0}
+                },
+                {
+                  "stableDebtReserve.0xd0a1e359811322d97991e03f863a0c30c2cf029c":
+                      {r"$gt": 0}
+                }
+              ]
+            }
+          ]
+        })
+        .map((event) => AaveUserAccountData(
+            userAddress: event['userAddress'],
+            totalCollateralEth: event['totalCollateralEth'],
+            totalDebtETH: event['totalDebtETH'],
+            availableBorrowsETH: event['availableBorrowsETH'],
+            currentLiquidationThreshold: event['currentLiquidationThreshold'],
+            ltv: event['ltv'],
+            healthFactor: event['healthFactor'],
+            collateralReserve: event['collateralReserve'],
+            variableDebtReserve: event['variableDebtReserve'],
+            stableDebtReserve: event['stableDebtReserve']))
+        .toList();
+    log.d('debt users: $users');
+
+    return users;
   }
 
   //

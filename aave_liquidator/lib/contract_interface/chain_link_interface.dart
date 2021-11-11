@@ -57,15 +57,31 @@ class ChainLinkPriceOracle {
 
   /// Listen for DAI price.
   listenForDaiPriceUpdate() {
+    log.i('listenForDaiPriceUpdate');
     _chainlinkContracts.daiEthAggregator
         .answerUpdatedEvents()
         .listen((newPrice) async {
       /// get previous asset reserve data from db.
       List<AaveReserveData> reserveList =
           await _mongodService.getReservesFromDb();
+      double oldDaiPrice = reserveList
+          .firstWhere(
+            (element) =>
+                element.assetAddress ==
+                token.daiTokenContractAddress.toString(),
+          )
+          .assetPrice;
 
-      /// if price increase, get users with token as debt
-      /// if price decrease get users with dai as collateral
+      /// if price increase,
+      if (oldDaiPrice < newPrice.current.toDouble()) {
+        /// get users with current token as debt
+        _mongodService.getDebtUsers(token.daiTokenContractAddress.toString());
+      } else {
+        /// if price decrease get users with dai as collateral
+        _mongodService
+            .getCollateralUsers(token.daiTokenContractAddress.toString());
+      }
+
       log.w('new price of dai in eth $newPrice');
 
       /// calculate health factor

@@ -172,6 +172,10 @@ void main() async {
   // convert price in ETH
 
   /// Listens for asset price change
+  await _mongodService
+      .getCollateralUsers('0xd0a1e359811322d97991e03f863a0c30c2cf029c');
+  await _mongodService
+      .getDebtUsers('0xd0a1e359811322d97991e03f863a0c30c2cf029c');
   // update new price in db
   _oracle.priceListener();
   // _oracle.listenForEthPriceUpdate().onData((data) {

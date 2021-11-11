@@ -38,7 +38,7 @@ class AaveUserAccountData {
         "ltv": ltv,
         "healthFactor": healthFactor,
         "collateralReserve": collateralReserve,
-        "variabelDebtReserve": variableDebtReserve,
+        "variableDebtReserve": variableDebtReserve,
         "stableDebtReserve": stableDebtReserve,
       };
 }
