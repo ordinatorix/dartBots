@@ -5,6 +5,7 @@ import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
+import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:aave_liquidator/token_address.dart' as token;
@@ -42,50 +43,133 @@ class ChainLinkPriceOracle {
   // }
 
   priceListener() {
-    log.i('listenning for price update');
+    log.i('priceListener');
 
-    _chainlinkContracts.daiEthAggregator.answerUpdatedEvents().listen((event) {
-      log.w('new dai price in eth: ${event.current}');
-    });
+    _listenForEthPriceUpdate();
+    _listenForDaiPriceUpdate();
   }
 
   /// listen for eth price.
-  listenForEthPriceUpdate() {
+  _listenForEthPriceUpdate() {
     //TODO: price listeners
     log.i('listenForEthPriceUpdate');
   }
 
   /// Listen for DAI price.
-  listenForDaiPriceUpdate() {
+  _listenForDaiPriceUpdate() {
     log.i('listenForDaiPriceUpdate');
     _chainlinkContracts.daiEthAggregator
         .answerUpdatedEvents()
         .listen((newPrice) async {
+      String _currentTokenAddress = token.daiTokenContractAddress.toString();
+
       /// get previous asset reserve data from db.
       List<AaveReserveData> reserveList =
           await _mongodService.getReservesFromDb();
+
+      /// get its previous price
       double oldDaiPrice = reserveList
           .firstWhere(
-            (element) =>
-                element.assetAddress ==
-                token.daiTokenContractAddress.toString(),
+            (element) => element.assetAddress == _currentTokenAddress,
           )
           .assetPrice;
+      late List<AaveUserAccountData> _userAccountDataList;
 
       /// if price increase,
       if (oldDaiPrice < newPrice.current.toDouble()) {
         /// get users with current token as debt
-        _mongodService.getDebtUsers(token.daiTokenContractAddress.toString());
+        _userAccountDataList =
+            await _mongodService.getDebtUsers(_currentTokenAddress);
       } else {
         /// if price decrease get users with dai as collateral
-        _mongodService
-            .getCollateralUsers(token.daiTokenContractAddress.toString());
+        _userAccountDataList =
+            await _mongodService.getCollateralUsers(_currentTokenAddress);
       }
 
       log.w('new price of dai in eth $newPrice');
 
-      /// calculate health factor
+      /// calculate health factor of each user in [_userAccountDataList].
+      ///
+      /// hf = total collateralEth * liquidation thresh
+      ///      ---------------------------------------
+      ///                total borrow
+
+      calculateUsersHealthFactor(
+          currentPrice: newPrice.current.toDouble(),
+          currentTokenAddress: _currentTokenAddress,
+          reserveDataList: reserveList,
+          userAccountDataList: _userAccountDataList);
+
+      ///TODO: update price in db
+
+      /// TODO: liquidate users
     });
+  }
+
+  calculateUsersHealthFactor({
+    required List<AaveUserAccountData> userAccountDataList,
+    required List<AaveReserveData> reserveDataList,
+    required String currentTokenAddress,
+    required double currentPrice,
+  }) {
+    log.i('calculateUsersHealthFactor');
+    log.d('user account data list length: ${userAccountDataList.length}');
+    for (AaveUserAccountData user in userAccountDataList) {
+      // double numeratorSum = 0;
+      log.d('analizing user: ${user.userAddress}');
+      var _currentReserveData = reserveDataList
+          .firstWhere((element) => element.assetAddress == currentTokenAddress);
+      log.d('_currentReserveData: $_currentReserveData');
+      var tokenAmount = user.collateralReserve[currentTokenAddress];
+      log.d('tokenAmount: $tokenAmount');
+      var oldPrice = _currentReserveData.assetPrice;
+      log.d('oldPrice: $oldPrice');
+      var oldTokenValue = oldPrice * tokenAmount;
+      log.d('oldTokenValue: $oldTokenValue');
+      var newTokenValue = currentPrice * tokenAmount;
+      log.d('newTokenValue: $newTokenValue');
+      var totalCollat = user.totalCollateralEth - oldTokenValue + newTokenValue;
+      log.d('totalCollat: $totalCollat');
+      // /// calculate the sum of each numerator
+      // user.collateralReserve.forEach((collateralAddress, collateralAmount) {
+      //   var _currentReserveData = reserveDataList
+      //       .firstWhere((element) => element.assetAddress == collateralAddress);
+
+      //   /// get liquidation threshold of each asset
+      //   double _collateralLiqThresh =
+      //       _currentReserveData.assetConfig.liquidationThreshold;
+      //   log.d(
+      //       'liquidation thresh for $collateralAddress: $_collateralLiqThresh');
+
+      //   double _collateralPrice = _currentReserveData.assetPrice;
+
+      //   /// use the updated price when necessary
+      //   if (collateralAddress == currentTokenAddress) {
+      //     log.d('collateralprice: $currentPrice');
+      //     log.d('collateral amount: $collateralAmount');
+      //     double sumOfIt =
+      //         currentPrice * collateralAmount * _collateralLiqThresh;
+      //     numeratorSum = ++sumOfIt;
+      //   } else {
+      //     log.d('collateralprice: $_collateralPrice ');
+      //     log.d('collateral amount: $collateralAmount');
+      //     double sumOfIt =
+      //         _collateralPrice * collateralAmount * _collateralLiqThresh;
+      //     numeratorSum = ++sumOfIt;
+      //   }
+
+      //   log.d('new sum: $numeratorSum');
+      // });
+
+      // log.d('final sum: $numeratorSum');
+      log.d('total debtEth: ${user.totalDebtETH}');
+      double hf =
+          totalCollat * user.currentLiquidationThreshold / user.totalDebtETH;
+      // double hf = numeratorSum / user.totalDebtETH;
+      // double lqtd = numeratorSum / user.totalCollateralEth;
+      // log.w('new liqu thresh: $lqtd');
+      log.w('new health factor: $hf');
+    }
   }
 
   /// Calculate percent change in price from previous aave oracle price.

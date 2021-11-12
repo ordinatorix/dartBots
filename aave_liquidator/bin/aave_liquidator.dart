@@ -141,7 +141,7 @@ void main() async {
     }
   }
 
-  // await _pollReserveData();
+  await _pollReserveData();
 
   /// Poll Aave for new users
   ///
@@ -169,26 +169,21 @@ void main() async {
 
   // every 30 min,
   // get assets price
-  // convert price in ETH
 
-  /// Listens for asset price change
-  await _mongodService
-      .getCollateralUsers('0xd0a1e359811322d97991e03f863a0c30c2cf029c');
-  await _mongodService
-      .getDebtUsers('0xd0a1e359811322d97991e03f863a0c30c2cf029c');
-  // update new price in db
-  _oracle.priceListener();
-  // _oracle.listenForEthPriceUpdate().onData((data) {
-  //   print('data received: ${data.current}');
+  /// For every asset available on aave.
+  /// Listen for price changes.
+  /// 
+  // _oracle.priceListener();
+  List<AaveReserveData> reserveDataList =
+      await _mongodService.getReservesFromDb();
+  final userAccountDataList = await _mongodService
+      .getCollateralUsers('0x2260fac5e5542a773aa44fbcfedf7c193bc2c599');
+  _oracle.calculateUsersHealthFactor(
+      userAccountDataList: userAccountDataList,
+      reserveDataList: reserveDataList,
+      currentTokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+      currentPrice: 13764562670000000000.0);
 
-  //   // _mongodService.updateReserveAssetPrice(
-  //   //     assetAddress: _config.ethTokenAddress,
-  //   //     newAssetPrice: data.current.toDouble());
-  // });
-
-  /// for every asset available on aave
-  /// listen for price emmit
-  /// convert price in ETH
   /// calc % change from price know to aave
   /// if the price % change >= than the aave price discovery threshold
   /// for each user:
