@@ -178,11 +178,12 @@ void main() async {
       await _mongodService.getReservesFromDb();
   final userAccountDataList = await _mongodService
       .getCollateralUsers('0x2260fac5e5542a773aa44fbcfedf7c193bc2c599');
+  
   _oracle.calculateUsersHealthFactor(
       userAccountDataList: userAccountDataList,
       reserveDataList: reserveDataList,
       currentTokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-      currentPrice: 13764562670000000000.0);
+      currentPrice: 13904338153503890000.0);
 
   /// calc % change from price know to aave
   /// if the price % change >= than the aave price discovery threshold
