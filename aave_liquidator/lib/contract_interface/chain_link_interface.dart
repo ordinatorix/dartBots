@@ -115,7 +115,7 @@ class ChainLinkPriceOracle {
     log.i('calculateUsersHealthFactor');
     log.d('user account data list length: ${userAccountDataList.length}');
     for (AaveUserAccountData user in userAccountDataList) {
-      // double numeratorSum = 0;
+      double numeratorSum = 0;
       log.d('analizing user: ${user.userAddress}');
       var _currentReserveData = reserveDataList
           .firstWhere((element) => element.assetAddress == currentTokenAddress);
@@ -128,46 +128,51 @@ class ChainLinkPriceOracle {
       log.d('oldTokenValue: $oldTokenValue');
       var newTokenValue = currentPrice * tokenAmount;
       log.d('newTokenValue: $newTokenValue');
+
       var totalCollat = user.totalCollateralEth - oldTokenValue + newTokenValue;
+      log.d('old total collateral: ${user.totalCollateralEth}');
       log.d('totalCollat: $totalCollat');
-      // /// calculate the sum of each numerator
-      // user.collateralReserve.forEach((collateralAddress, collateralAmount) {
-      //   var _currentReserveData = reserveDataList
-      //       .firstWhere((element) => element.assetAddress == collateralAddress);
 
-      //   /// get liquidation threshold of each asset
-      //   double _collateralLiqThresh =
-      //       _currentReserveData.assetConfig.liquidationThreshold;
-      //   log.d(
-      //       'liquidation thresh for $collateralAddress: $_collateralLiqThresh');
+      /// calculate the sum of each numerator
+      user.collateralReserve.forEach((collateralAddress, collateralAmount) {
+        var _currentReserveData = reserveDataList
+            .firstWhere((element) => element.assetAddress == collateralAddress);
 
-      //   double _collateralPrice = _currentReserveData.assetPrice;
+        /// get liquidation threshold of each asset
+        double _collateralLiqThresh =
+            _currentReserveData.assetConfig.liquidationThreshold;
+        log.d(
+            'liquidation thresh for $collateralAddress: $_collateralLiqThresh');
 
-      //   /// use the updated price when necessary
-      //   if (collateralAddress == currentTokenAddress) {
-      //     log.d('collateralprice: $currentPrice');
-      //     log.d('collateral amount: $collateralAmount');
-      //     double sumOfIt =
-      //         currentPrice * collateralAmount * _collateralLiqThresh;
-      //     numeratorSum = ++sumOfIt;
-      //   } else {
-      //     log.d('collateralprice: $_collateralPrice ');
-      //     log.d('collateral amount: $collateralAmount');
-      //     double sumOfIt =
-      //         _collateralPrice * collateralAmount * _collateralLiqThresh;
-      //     numeratorSum = ++sumOfIt;
-      //   }
+        double _collateralPrice = _currentReserveData.assetPrice;
 
-      //   log.d('new sum: $numeratorSum');
-      // });
+        /// use the updated price when necessary
+        if (collateralAddress == currentTokenAddress) {
+          log.d('collateralprice: $currentPrice');
+          log.d('collateral amount: $collateralAmount');
+          double sumOfIt =
+              currentPrice * collateralAmount * _collateralLiqThresh;
+          numeratorSum = ++sumOfIt;
+        } else {
+          log.d('collateralprice: $_collateralPrice ');
+          log.d('collateral amount: $collateralAmount');
+          double sumOfIt =
+              _collateralPrice * collateralAmount * _collateralLiqThresh;
+          numeratorSum = ++sumOfIt;
+        }
 
-      // log.d('final sum: $numeratorSum');
+        log.d('new sum: $numeratorSum');
+      });
+
+      log.d('final sum: $numeratorSum');
       log.d('total debtEth: ${user.totalDebtETH}');
+      log.w('old liqu trehs: ${user.currentLiquidationThreshold}');
+      double lqtd = numeratorSum / user.totalCollateralEth;
+      log.w('new liqu thresh: $lqtd');
       double hf =
           totalCollat * user.currentLiquidationThreshold / user.totalDebtETH;
       // double hf = numeratorSum / user.totalDebtETH;
-      // double lqtd = numeratorSum / user.totalCollateralEth;
-      // log.w('new liqu thresh: $lqtd');
+
       log.w('new health factor: $hf');
     }
   }
