@@ -136,10 +136,11 @@ class MongodService {
   }
 
   /// Get users with [tokenAddress] as collateral asset.
-  Future<List> getCollateralUsers(String tokenAddress) async {
+  Future<List<AaveUserAccountData>> getCollateralUsers(
+      String tokenAddress) async {
     log.i('getCollateralUsers | token address: $tokenAddress');
 
-    List users = await _userStore
+    List<AaveUserAccountData> users = await _userStore
         .find(where.gt('collateralReserve.$tokenAddress', 0))
         .map((event) => AaveUserAccountData(
             userAddress: event['userAddress'],
@@ -160,21 +161,19 @@ class MongodService {
   }
 
   /// Get users with [tokenAddress] as debt asset.
-  Future<List> getDebtUsers(String tokenAddress) async {
+  Future<List<AaveUserAccountData>> getDebtUsers(String tokenAddress) async {
     log.i('getDetUsers | token address: $tokenAddress');
 
-    List users = await _userStore
+    List<AaveUserAccountData> users = await _userStore
         .find({
           r"$and": [
             {
               r"$or": [
                 {
-                  "variableDebtReserve.0xd0a1e359811322d97991e03f863a0c30c2cf029c":
-                      {r"$gt": 0}
+                  "variableDebtReserve.$tokenAddress": {r"$gt": 0}
                 },
                 {
-                  "stableDebtReserve.0xd0a1e359811322d97991e03f863a0c30c2cf029c":
-                      {r"$gt": 0}
+                  "stableDebtReserve.$tokenAddress": {r"$gt": 0}
                 }
               ]
             }
