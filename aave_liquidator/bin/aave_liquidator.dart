@@ -11,6 +11,7 @@ import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:logger/logger.dart';
 import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
+import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('main');
 void main() async {
@@ -80,7 +81,8 @@ void main() async {
       log.v('reserve list in db: $reserveDataList');
 
       /// get list of assets from aave.
-      final _assetsList = await _reserveManager.getAaveReserveList();
+      final List<EthereumAddress> _assetsList =
+          await _reserveManager.getAaveReserveList();
       log.v('assets list: $_assetsList');
 
       /// get aave reserve assets symbol
@@ -88,17 +90,17 @@ void main() async {
       log.v('symbol list: $_assetSymbolList');
 
       /// get price from aave
-      final _assetPriceList =
+      final List<BigInt> _assetPriceList =
           await _reserveManager.getAllReserveAssetPrice(_assetsList);
       log.v('asset price list: $_assetPriceList');
 
       /// get asset config from aave
-      final _assetConfigList =
+      final List<AaveReserveConfigData> _assetConfigList =
           await _reserveManager.getAllReserveAssetConfigData(_assetsList);
       log.v('asset config list: $_assetConfigList');
 
       /// get asset price from chainlink
-      final List<double> _oracleAssetPriceList =
+      final List<BigInt> _oracleAssetPriceList =
           await _oracle.getAllAssetsPrice(_assetsList);
       log.v('oracle pricelist: $_oracleAssetPriceList');
 
@@ -116,7 +118,7 @@ void main() async {
             assetAddress: _assetsList[i].toString(),
             assetConfig: _assetConfigList[i],
             aaveAssetPrice: _assetPriceList[i],
-            assetPrice: _oracleAssetPriceList[i] == -1
+            assetPrice: _oracleAssetPriceList[i] == BigInt.from(-1)
                 ? _assetPriceList[i]
                 : _oracleAssetPriceList[i],
           ));
@@ -126,7 +128,7 @@ void main() async {
             assetAddress: _assetsList[i].toString(),
             assetConfig: _assetConfigList[i],
             aaveAssetPrice: _assetPriceList[i],
-            assetPrice: _oracleAssetPriceList[i] == -1
+            assetPrice: _oracleAssetPriceList[i] == BigInt.from(-1)
                 ? _assetPriceList[i]
                 : _oracleAssetPriceList[i],
           );
@@ -149,20 +151,23 @@ void main() async {
   /// TODO: create 24hr cron repeat interval.
   _pollNewUsers() async {
     log.i('_pollNewUsers');
+    try {
+      /// get current block
+      final _currentBlock = await _web3.getCurrentBlock();
 
-    /// get current block
-    final _currentBlock = await _web3.getCurrentBlock();
+      ///TODO: get borrow events since last know block in increments of 1000
+      ///
+      final _fromBlock = _currentBlock - 1000;
+      final _borrowEvents = await _lendingPoolEventManager.queryBorrowEvent(
+          fromBlock: _fromBlock);
+      log.d('_borrowEvents found :${_borrowEvents.length}');
+      final _userList = _lendingPoolEventManager
+          .extractUserAddressFromBorrowEvent(_borrowEvents);
 
-    ///TODO: get borrow events since last know block in increments of 1000
-    ///
-    final _fromBlock = _currentBlock - 1000;
-    final _borrowEvents =
-        await _lendingPoolEventManager.queryBorrowEvent(fromBlock: _fromBlock);
-    log.d('_borrowEvents found :${_borrowEvents.length}');
-    final _userList = _lendingPoolEventManager
-        .extractUserAddressFromBorrowEvent(_borrowEvents);
-
-    await _userManager.getUserAccountData(userList: _userList);
+      await _userManager.getUserAccountData(userList: _userList);
+    } catch (e) {
+      log.e('error polling new users: $e');
+    }
   }
 
   await _pollNewUsers();
@@ -172,18 +177,21 @@ void main() async {
 
   /// For every asset available on aave.
   /// Listen for price changes.
-  /// 
+  ///
   // _oracle.priceListener();
+
   List<AaveReserveData> reserveDataList =
       await _mongodService.getReservesFromDb();
   final userAccountDataList = await _mongodService
       .getCollateralUsers('0x2260fac5e5542a773aa44fbcfedf7c193bc2c599');
-  
+
   _oracle.calculateUsersHealthFactor(
-      userAccountDataList: userAccountDataList,
-      reserveDataList: reserveDataList,
-      currentTokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-      currentPrice: 13904338153503890000.0);
+    userAccountDataList: userAccountDataList,
+    reserveDataList: reserveDataList,
+    currentTokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+    currentPrice: BigInt.parse('14047136687690356000'),
+    // currentPrice: BigInt.parse('13904338153503890000'),
+  );
 
   /// calc % change from price know to aave
   /// if the price % change >= than the aave price discovery threshold
