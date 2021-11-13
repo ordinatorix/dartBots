@@ -1,15 +1,15 @@
 class AaveUserAccountData {
   String userAddress;
-  double totalCollateralEth;
-  double totalDebtETH;
-  double availableBorrowsETH;
-  double currentLiquidationThreshold;
-  double ltv;
-  double healthFactor;
+  BigInt totalCollateralEth;
+  BigInt totalDebtETH;
+  BigInt availableBorrowsETH;
+  BigInt currentLiquidationThreshold;
+  BigInt ltv;
+  BigInt healthFactor;
   Map collateralReserve;
   Map variableDebtReserve;
   Map stableDebtReserve;
-  double liquidationCollateralPrice;
+  // BigInt liquidationCollateralPrice;
 
   AaveUserAccountData({
     required this.userAddress,
@@ -22,7 +22,7 @@ class AaveUserAccountData {
     required this.collateralReserve,
     required this.variableDebtReserve,
     required this.stableDebtReserve,
-    this.liquidationCollateralPrice = 0,
+    // this.liquidationCollateralPrice = 0,
   });
   @override
   String toString() {
@@ -31,12 +31,12 @@ class AaveUserAccountData {
 
   Map<String, dynamic> toJson() => {
         "userAddress": userAddress,
-        "totalCollateralEth": totalCollateralEth,
-        "totalDebtETH": totalDebtETH,
-        "availableBorrowsETH": availableBorrowsETH,
-        "currentLiquidationThreshold": currentLiquidationThreshold,
-        "ltv": ltv,
-        "healthFactor": healthFactor,
+        "totalCollateralEth": totalCollateralEth.toString(),
+        "totalDebtETH": totalDebtETH.toString(),
+        "availableBorrowsETH": availableBorrowsETH.toString(),
+        "currentLiquidationThreshold": currentLiquidationThreshold.toString(),
+        "ltv": ltv.toString(),
+        "healthFactor": healthFactor.toString(),
         "collateralReserve": collateralReserve,
         "variableDebtReserve": variableDebtReserve,
         "stableDebtReserve": stableDebtReserve,
@@ -44,9 +44,9 @@ class AaveUserAccountData {
 }
 
 class AaveUserReserveData {
-  Map<String, double> collateral;
-  Map<String, double> stableDebt;
-  Map<String, double> variableDebt;
+  Map<String, String> collateral;
+  Map<String, String> stableDebt;
+  Map<String, String> variableDebt;
 
   AaveUserReserveData({
     this.collateral = const {},
@@ -57,5 +57,6 @@ class AaveUserReserveData {
   String toString() {
     return 'collateral: $collateral;\n stable debt: $stableDebt;\n variable debt: $variableDebt';
   }
-}
 
+  
+}

@@ -72,8 +72,10 @@ class AaveReserveManager {
   AaveReserveConfigData _parseReserveConfig(GetReserveConfigurationData data) {
     log.v('_parseReserveConfig');
     return AaveReserveConfigData(
-        liquidationBonus: data.liquidationBonus.toDouble(),
-        liquidationThreshold: data.liquidationThreshold.toDouble());
+      liquidationBonus: data.liquidationBonus,
+      liquidationThreshold: data.liquidationThreshold,
+      decimals: data.decimals,
+    );
   }
 
   Future<List<AaveReserveConfigData>> getAllReserveAssetConfigData(
@@ -95,13 +97,13 @@ class AaveReserveManager {
   /// Gets the asset price from aave.
   ///
   /// Returns the price of the asset in ETH wei units
-  Future<double> getReserveAssetPriceFromAave(String asset) async {
+  Future<BigInt> getReserveAssetPriceFromAave(String asset) async {
     log.i('getReserveAssetPriceFromAave');
     try {
       final BigInt _price = await _aaveContracts.aavePriceProvider
           .getAssetPrice(EthereumAddress.fromHex(asset));
 
-      return _price.toDouble();
+      return _price;
     } catch (e) {
       log.e('error getting asset price from aave: $e');
       throw 'no price from aave';
@@ -110,16 +112,16 @@ class AaveReserveManager {
 
   /// Gets all assets price from aave.
   /// Returns an array of prices in ETH wei units
-  Future<List<double>> getAllReserveAssetPrice(
+  Future<List<BigInt>> getAllReserveAssetPrice(
       List<EthereumAddress> assets) async {
     log.i('getAllReserveAssetPrice');
     try {
-      List<double> _priceList = [];
+      List<BigInt> _priceList = [];
 
       final List _rawPriceList =
           await _aaveContracts.aavePriceProvider.getAssetsPrices(assets);
       for (BigInt price in _rawPriceList) {
-        _priceList.add(price.toDouble());
+        _priceList.add(price);
       }
       return _priceList;
     } catch (e) {
@@ -128,10 +130,11 @@ class AaveReserveManager {
     }
   }
 
-  updateAaveReserveData() async {
+  _updateAaveReserveData() async {
+    //TODO: review this
     try {
       final List<EthereumAddress> _reserveList = await getAaveReserveList();
-      final List<double> _assetsPrice =
+      final List<BigInt> _assetsPrice =
           await getAllReserveAssetPrice(_reserveList);
 
       for (var asset in _reserveList) {
@@ -142,8 +145,8 @@ class AaveReserveManager {
           assetSymbol: '',
           assetAddress: asset.toString(),
           assetConfig: res,
-          assetPrice: 0,
-          aaveAssetPrice: 0,
+          assetPrice: BigInt.zero,
+          aaveAssetPrice: BigInt.zero,
         );
         // add to db
         _store.updateAaveReserve(_reserveData);

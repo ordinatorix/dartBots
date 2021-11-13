@@ -48,7 +48,7 @@ class AaveUserManager {
       }
       _aaveReserveList = await _store.getReservesFromDb();
 
-      log.v(
+      log.i(
           'getting user account data of ${userList.length} users.\n Please wait...');
       List<AaveUserAccountData> _aaveUserList = [];
 
@@ -60,8 +60,7 @@ class AaveUserManager {
             .getUserAccountData(_userAddress);
 
         /// Only keep users with a health factor below [_config.focusHealthFactor].
-        if (userAccountData.healthFactor.toDouble() <
-            _config.focusHealthFactor) {
+        if (userAccountData.healthFactor < _config.focusHealthFactor) {
           AaveUserReserveData _userReserveData =
               await _getAaveUserReserveData(userAddress: _userAddress);
           AaveUserAccountData _userData = _parser.parseUserAccountData(
@@ -111,8 +110,8 @@ class AaveUserManager {
         /// Get user collateral.
         _aaveUserReserveData.collateral.update(
           collateral,
-          (value) => userReserveData.currentATokenBalance.toDouble(),
-          ifAbsent: () => userReserveData.currentATokenBalance.toDouble(),
+          (value) => userReserveData.currentATokenBalance.toString(),
+          ifAbsent: () => userReserveData.currentATokenBalance.toString(),
         );
       }
       for (final debt in _userReserves['debt']!) {
@@ -126,15 +125,15 @@ class AaveUserManager {
         /// Get user variable debt.
         _aaveUserReserveData.variableDebt.update(
           debt,
-          (value) => userReserveData.currentVariableDebt.toDouble(),
-          ifAbsent: () => userReserveData.currentVariableDebt.toDouble(),
+          (value) => userReserveData.currentVariableDebt.toString(),
+          ifAbsent: () => userReserveData.currentVariableDebt.toString(),
         );
 
         /// Get user stable debt.
         _aaveUserReserveData.stableDebt.update(
           debt,
-          (value) => userReserveData.currentStableDebt.toDouble(),
-          ifAbsent: () => userReserveData.currentStableDebt.toDouble(),
+          (value) => userReserveData.currentStableDebt.toString(),
+          ifAbsent: () => userReserveData.currentStableDebt.toString(),
         );
       }
 
