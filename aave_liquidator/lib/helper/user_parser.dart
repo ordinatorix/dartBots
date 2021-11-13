@@ -17,16 +17,15 @@ class UserParser {
 
     final parsedUserAccountData = AaveUserAccountData(
       userAddress: userAddress.toString(),
-      totalCollateralEth: userAccountData.totalCollateralETH.toDouble(),
+      totalCollateralEth: userAccountData.totalCollateralETH,
       collateralReserve: userReserveData.collateral,
-      totalDebtETH: userAccountData.totalDebtETH.toDouble(),
+      totalDebtETH: userAccountData.totalDebtETH,
       stableDebtReserve: userReserveData.stableDebt,
       variableDebtReserve: userReserveData.variableDebt,
-      availableBorrowsETH: userAccountData.availableBorrowsETH.toDouble(),
-      currentLiquidationThreshold:
-          userAccountData.currentLiquidationThreshold.toDouble(),
-      ltv: userAccountData.ltv.toDouble(),
-      healthFactor: userAccountData.healthFactor.toDouble(),
+      availableBorrowsETH: userAccountData.availableBorrowsETH,
+      currentLiquidationThreshold: userAccountData.currentLiquidationThreshold,
+      ltv: userAccountData.ltv,
+      healthFactor: userAccountData.healthFactor,
     );
 
     return parsedUserAccountData;

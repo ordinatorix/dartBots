@@ -2,7 +2,7 @@ class AaveDepositEvent {
   String reserve;
   String userAddress;
   String onBehalfOf;
-  double amount;
+  BigInt amount;
 
   AaveDepositEvent({
     required this.reserve,
