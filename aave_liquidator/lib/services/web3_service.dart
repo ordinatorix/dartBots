@@ -62,7 +62,7 @@ class Web3Service {
       _isListenning = await web3Client.isListeningForNetwork();
       log.v('web3Client is listening: $_isListenning');
     } catch (e) {
-      log.e('error connecting to lockchain: $e');
+      log.e('error connecting to blockchain: $e');
     }
   }
 
