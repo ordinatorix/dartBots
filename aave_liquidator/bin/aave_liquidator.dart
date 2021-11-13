@@ -15,7 +15,7 @@ import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('main');
 void main() async {
-  Logger.level = Level.debug;
+  Logger.level = Level.info;
   log.v('Success, We\'re In!');
 
   /// Load env and config files.
@@ -178,32 +178,19 @@ void main() async {
   /// For every asset available on aave.
   /// Listen for price changes.
   ///
-  // _oracle.priceListener();
+  _oracle.priceListener();
 
-  List<AaveReserveData> reserveDataList =
-      await _mongodService.getReservesFromDb();
-  final userAccountDataList = await _mongodService
-      .getCollateralUsers('0x2260fac5e5542a773aa44fbcfedf7c193bc2c599');
+  // var newData = await _oracle.getTokenUser(
+  //   tokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+  //   tokenPrice: BigInt.parse('9047136687690356000'),
+  // );
+  // List liquidatable = newData
+  //     .where((user) => BigInt.parse(user.genHf) < BigInt.from(10000))
+  //     .toList();
 
-  _oracle.calculateUsersHealthFactor(
-    userAccountDataList: userAccountDataList,
-    reserveDataList: reserveDataList,
-    currentTokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-    currentPrice: BigInt.parse('14047136687690356000'),
-    // currentPrice: BigInt.parse('13904338153503890000'),
-  );
+  // log.w(liquidatable);
 
-  /// calc % change from price know to aave
-  /// if the price % change >= than the aave price discovery threshold
-  /// for each user:
-  /// calc new health factor
-  /// if new hf < 1 liquidate collateral with highest bonus
-  /// update price from aave
-  /// if price % change is < than aave price discovery threshold
-  /// update user account data
-  /// update price from aave
-  // final AaveUserManager _userManager =
-  //     AaveUserManager(web3: _web3, config: _config, mongod: _mongod);
+  /// TODO: call samrt contract to liquidate.
 
   /// Terminate all conections
   _web3.dispose();

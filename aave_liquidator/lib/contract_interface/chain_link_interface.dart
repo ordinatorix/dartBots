@@ -59,157 +59,158 @@ class ChainLinkPriceOracle {
     log.i('listenForDaiPriceUpdate');
     _chainlinkContracts.daiEthAggregator
         .answerUpdatedEvents()
-        .listen((newPrice) async {
-      String _currentTokenAddress = token.daiTokenContractAddress.toString();
+        .listen((newDaiPrice) async {
+      log.w('new price of dai in eth $newDaiPrice');
+      String _daiTokenAddress = token.daiTokenContractAddress.toString();
+      List<AaveUserAccountData> liquidatableUsers = await getTokenUser(
+        tokenAddress: _daiTokenAddress,
+        tokenPrice: newDaiPrice.current,
+      );
 
+      ///TODO: update price in db
+
+      /// TODO: liquidate users
+      ///
+      List liquidatedUsers = liquidatableUsers
+          .where((user) =>
+              BigInt.parse(user.generatedHealthFactor) < BigInt.from(10000))
+          .toList();
+
+      log.w('liquidatedUsers: $liquidatedUsers');
+    });
+  }
+
+  Future<List<AaveUserAccountData>> getTokenUser({
+    required String tokenAddress,
+    required BigInt tokenPrice,
+  }) async {
+    try {
       /// get previous asset reserve data from db.
       List<AaveReserveData> reserveList =
           await _mongodService.getReservesFromDb();
 
       /// get its previous price
-      BigInt oldDaiPrice = reserveList
+      BigInt oldTokenPrice = reserveList
           .firstWhere(
-            (element) => element.assetAddress == _currentTokenAddress,
+            (reserve) => reserve.assetAddress == tokenAddress,
           )
           .assetPrice;
       late List<AaveUserAccountData> _userAccountDataList;
 
       /// if price increase,
-      if (oldDaiPrice < newPrice.current) {
+      if (oldTokenPrice < tokenPrice) {
         /// get users with current token as debt
-        _userAccountDataList =
-            await _mongodService.getDebtUsers(_currentTokenAddress);
+        _userAccountDataList = await _mongodService.getDebtUsers(tokenAddress);
       } else {
         /// if price decrease get users with dai as collateral
         _userAccountDataList =
-            await _mongodService.getCollateralUsers(_currentTokenAddress);
+            await _mongodService.getCollateralUsers(tokenAddress);
       }
 
-      log.w('new price of dai in eth $newPrice');
-
-      /// calculate health factor of each user in [_userAccountDataList].
+      /// calculate healthfactor based on new price.
       ///
-      /// hf = total collateralEth * liquidation thresh
-      ///      ---------------------------------------
-      ///                total borrow
+      /// returns list of [AaveUserAccountData] with the calculated HF
+      List<AaveUserAccountData> newData = _userAccountDataList
+          .map(
+            (userAcount) => calculateUsersHealthFactor(
+                userAccountData: userAcount,
+                reserveDataList: reserveList,
+                currentTokenAddress: tokenAddress,
+                currentPrice: tokenPrice),
+          )
+          .toList();
 
-      calculateUsersHealthFactor(
-          currentPrice: newPrice.current,
-          currentTokenAddress: _currentTokenAddress,
-          reserveDataList: reserveList,
-          userAccountDataList: _userAccountDataList);
-
-      ///TODO: update price in db
-
-      /// TODO: liquidate users
-    });
+      return newData;
+    } catch (e) {
+      log.e('error getting liquidatable users: $e');
+      throw 'error getting liquidatable users';
+    }
   }
 
-  calculateUsersHealthFactor({
-    required List<AaveUserAccountData> userAccountDataList,
+  AaveUserAccountData calculateUsersHealthFactor({
+    required AaveUserAccountData userAccountData,
     required List<AaveReserveData> reserveDataList,
     required String currentTokenAddress,
     required BigInt currentPrice,
   }) {
-    log.i('calculateUsersHealthFactor');
-    log.d('user account data list length: ${userAccountDataList.length}');
-    for (AaveUserAccountData user in userAccountDataList) {
-      BigInt numeratorSum = BigInt.zero;
+    log.i(
+        'calculateUsersHealthFactor | userAddress: ${userAccountData.userAddress}');
 
-      BigInt calculatedCollateralETH = BigInt.zero;
-      log.d('analizing user: ${user.userAddress}');
+    BigInt numeratorSum = BigInt.zero;
 
-      ///get all reserves user uses
-      // AaveReserveData _currentReserveData = reserveDataList
-      //     .firstWhere((element) => element.assetAddress == currentTokenAddress);
-      // log.d('_currentReserveData: $_currentReserveData');
-      // log.d('current Price: $currentPrice');
-      // BigInt tokenAmount =
-      //     BigInt.parse(user.collateralReserve[currentTokenAddress]);
-      // log.d('tokenAmount: $tokenAmount');
-      // BigInt oldPrice = _currentReserveData.assetPrice;
-      // log.d('oldPrice: $oldPrice');
-      // BigInt oldTokenValue = oldPrice * tokenAmount;
-      // log.d('oldTokenValueETH: $oldTokenValue');
-      // BigInt newTokenValue = currentPrice * tokenAmount;
-      // log.d('newTokenValueETH: $newTokenValue');
+    BigInt calculatedCollateralETH = BigInt.zero;
+    log.d('analizing user: ${userAccountData.userAddress}');
 
-      // BigInt totalCollat =
-      //     user.totalCollateralEth - oldTokenValue + newTokenValue;
-      // log.d('old total collateral: ${user.totalCollateralEth}');
-      // log.d('new total Collateral: $totalCollat');
+    /// calculate the sum of each numerator
+    userAccountData.collateralReserve
+        .forEach((collateralAddress, collateralAmount) {
+      /// get the reserve data for each reserve user is using as collateral.
+      AaveReserveData _currentReserveData = reserveDataList
+          .firstWhere((element) => element.assetAddress == collateralAddress);
+      BigInt decimals = _currentReserveData.assetConfig.decimals;
+      BigInt factoredCollateralAmount = BigInt.parse(collateralAmount);
 
-      /// calculate the sum of each numerator
-      user.collateralReserve.forEach((collateralAddress, collateralAmount) {
-        /// get the reserve data for each reserve user is using as collateral.
-        AaveReserveData _currentReserveData = reserveDataList
-            .firstWhere((element) => element.assetAddress == collateralAddress);
-        BigInt decimals = _currentReserveData.assetConfig.decimals;
-        BigInt factoredCollateralAmount = BigInt.parse(collateralAmount);
+      if (decimals < BigInt.from(18)) {
+        log.d('raw collateralAmount: $collateralAmount');
+        int xFactor = 18 - decimals.toInt();
+        factoredCollateralAmount =
+            BigInt.parse(collateralAmount) * BigInt.from(10).pow(xFactor);
+        log.d('factored collateral amount: $factoredCollateralAmount');
+      } else {
+        // log.w(decimals);
+      }
 
-        if (decimals < BigInt.from(18)) {
-          log.w('raw collateralAmount: $collateralAmount');
-          int xFactor = 18 - decimals.toInt();
-          factoredCollateralAmount =
-              BigInt.parse(collateralAmount) * BigInt.from(10).pow(xFactor);
-          log.d('factored collateral amount: $factoredCollateralAmount');
-        } else {
-          log.w(decimals);
-        }
-
-        /// get liquidation threshold of each asset
-        BigInt _collateralLiqThresh =
-            _currentReserveData.assetConfig.liquidationThreshold;
-        log.d(
-            'liquidation thresh for $collateralAddress: $_collateralLiqThresh');// * BigInt.from(10000)}');
-
-        /// use the updated price when necessary
-        if (collateralAddress == currentTokenAddress) {
-          log.d('collateral price for $collateralAddress: $currentPrice');
-          log.d(
-              'collateral amount for $collateralAddress: $factoredCollateralAmount;');
-
-          BigInt tokenVal = factoredCollateralAmount * currentPrice;
-          log.d('collateral value Eth for $collateralAddress: $tokenVal');
-
-          calculatedCollateralETH = calculatedCollateralETH + tokenVal;
-
-          BigInt sumOfIt = tokenVal * _collateralLiqThresh ;//* BigInt.from(0.01);
-          numeratorSum = numeratorSum + sumOfIt;
-        } else {
-          /// get asset price
-          BigInt _collateralPrice = _currentReserveData.assetPrice;
-
-          log.d('collateral price for $collateralAddress: $_collateralPrice');
-          log.d(
-              'collateral amount for $collateralAddress: $factoredCollateralAmount');
-          BigInt tokenVal = factoredCollateralAmount * _collateralPrice;
-          log.d('collateral value Eth for $collateralAddress: $tokenVal');
-          calculatedCollateralETH = calculatedCollateralETH + tokenVal;
-          BigInt sumOfIt = tokenVal * _collateralLiqThresh ;//* BigInt.from(0.01);
-          numeratorSum = numeratorSum + sumOfIt;
-        }
-
-        // log.d('new sum: $numeratorSum');
-      });
-      // log.d('Collateral Amount: $calcTotCol');
+      /// get liquidation threshold of each asset
+      BigInt _collateralLiqThresh =
+          _currentReserveData.assetConfig.liquidationThreshold;
       log.d(
-          'calc total collateral ETH: ${calculatedCollateralETH / BigInt.from(10).pow(18)}');
-      log.d('total collateral ETH: ${user.totalCollateralEth}');
-      log.d('total debtEth: ${user.totalDebtETH}');
-      log.w('old liqu trehs: ${user.currentLiquidationThreshold}');
-      BigInt lqtd = BigInt.from(numeratorSum / calculatedCollateralETH);
-      // BigInt lqtd = BigInt.from(
-      //     (calculatedCollateralETH * user.currentLiquidationThreshold) /
-      //         user.totalCollateralEth);
-      log.w('new liqu thresh: $lqtd');
-      // BigInt hf = BigInt.from(
-      //     (calculatedCollateralETH * user.currentLiquidationThreshold) /
-      //         user.totalDebtETH);
-      BigInt hf = BigInt.from(numeratorSum / user.totalDebtETH);
-      log.w('old health factor: ${user.healthFactor}');
-      log.w('new health factor: $hf');
-    }
+          'liquidation thresh for $collateralAddress: $_collateralLiqThresh'); // * BigInt.from(10000)}');
+
+      /// use the updated price when necessary
+      if (collateralAddress == currentTokenAddress) {
+        log.d('collateral price for $collateralAddress: $currentPrice');
+        log.d(
+            'collateral amount for $collateralAddress: $factoredCollateralAmount;');
+
+        BigInt tokenVal = factoredCollateralAmount * currentPrice;
+        log.d('collateral value Eth for $collateralAddress: $tokenVal');
+
+        calculatedCollateralETH = calculatedCollateralETH + tokenVal;
+
+        BigInt sumOfIt = tokenVal * _collateralLiqThresh; //* BigInt.from(0.01);
+        numeratorSum = numeratorSum + sumOfIt;
+      } else {
+        /// get asset price
+        BigInt _collateralPrice = _currentReserveData.assetPrice;
+
+        log.d('collateral price for $collateralAddress: $_collateralPrice');
+        log.d(
+            'collateral amount for $collateralAddress: $factoredCollateralAmount');
+        BigInt tokenVal = factoredCollateralAmount * _collateralPrice;
+        log.d('collateral value Eth for $collateralAddress: $tokenVal');
+        calculatedCollateralETH = calculatedCollateralETH + tokenVal;
+        BigInt sumOfIt = tokenVal * _collateralLiqThresh; //* BigInt.from(0.01);
+        numeratorSum = numeratorSum + sumOfIt;
+      }
+    });
+
+    log.d(
+        'calc total collateral ETH: ${calculatedCollateralETH / BigInt.from(10).pow(18)}');
+    log.d('total collateral ETH: ${userAccountData.totalCollateralEth}');
+    log.d('total debtEth: ${userAccountData.totalDebtETH}');
+    log.d('old liqu trehs: ${userAccountData.currentLiquidationThreshold}');
+    BigInt lqtd = BigInt.from(numeratorSum / calculatedCollateralETH);
+
+    log.d('new liqu thresh: $lqtd');
+
+    BigInt hf = BigInt.from(
+        BigInt.from(numeratorSum / userAccountData.totalDebtETH) /
+            BigInt.from(10).pow(18));
+    log.w('old health factor: ${userAccountData.healthFactor}');
+    log.w('new health factor: $hf');
+    AaveUserAccountData calculatedUserData = userAccountData;
+    calculatedUserData.generatedHealthFactor = hf.toString();
+    return calculatedUserData;
   }
 
   /// Calculate percent change in price from previous aave oracle price.
