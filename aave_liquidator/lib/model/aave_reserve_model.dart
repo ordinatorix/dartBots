@@ -2,8 +2,8 @@ class AaveReserveData {
   String assetSymbol;
   String assetAddress;
   AaveReserveConfigData assetConfig;
-  double assetPrice;
-  double aaveAssetPrice;
+  BigInt assetPrice;
+  BigInt aaveAssetPrice;
 
   AaveReserveData({
     required this.assetSymbol,
@@ -17,26 +17,29 @@ class AaveReserveData {
         "assetSymbol": assetSymbol,
         "assetAddress": assetAddress,
         "assetConfiguration": assetConfig.toJson(),
-        "assetPrice": assetPrice,
-        "aaveAssetPrice": aaveAssetPrice,
+        "assetPrice": assetPrice.toString(),
+        "aaveAssetPrice": aaveAssetPrice.toString(),
       };
 
   @override
   String toString() {
-    return 'symbol: $assetSymbol, address: $assetAddress';
+    return 'symbol: $assetSymbol, address: $assetAddress, price: $aaveAssetPrice';
   }
 }
 
 class AaveReserveConfigData {
-  double liquidationThreshold;
-  double liquidationBonus;
+  BigInt liquidationThreshold;
+  BigInt liquidationBonus;
+  BigInt decimals;
   AaveReserveConfigData({
     required this.liquidationBonus,
     required this.liquidationThreshold,
+    required this.decimals,
   });
   Map<String, dynamic> toJson() => {
-        "liquidationBonus": liquidationBonus,
-        "liquidationThreshold": liquidationThreshold,
+        "liquidationBonus": liquidationBonus.toString(),
+        "liquidationThreshold": liquidationThreshold.toString(),
+        "decimals": decimals.toString(),
       };
 
   @override

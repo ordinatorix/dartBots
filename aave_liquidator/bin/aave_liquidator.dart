@@ -11,10 +11,11 @@ import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:logger/logger.dart';
 import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
+import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('main');
 void main() async {
-  Logger.level = Level.debug;
+  Logger.level = Level.info;
   log.v('Success, We\'re In!');
 
   /// Load env and config files.
@@ -80,7 +81,8 @@ void main() async {
       log.v('reserve list in db: $reserveDataList');
 
       /// get list of assets from aave.
-      final _assetsList = await _reserveManager.getAaveReserveList();
+      final List<EthereumAddress> _assetsList =
+          await _reserveManager.getAaveReserveList();
       log.v('assets list: $_assetsList');
 
       /// get aave reserve assets symbol
@@ -88,17 +90,17 @@ void main() async {
       log.v('symbol list: $_assetSymbolList');
 
       /// get price from aave
-      final _assetPriceList =
+      final List<BigInt> _assetPriceList =
           await _reserveManager.getAllReserveAssetPrice(_assetsList);
       log.v('asset price list: $_assetPriceList');
 
       /// get asset config from aave
-      final _assetConfigList =
+      final List<AaveReserveConfigData> _assetConfigList =
           await _reserveManager.getAllReserveAssetConfigData(_assetsList);
       log.v('asset config list: $_assetConfigList');
 
       /// get asset price from chainlink
-      final List<double> _oracleAssetPriceList =
+      final List<BigInt> _oracleAssetPriceList =
           await _oracle.getAllAssetsPrice(_assetsList);
       log.v('oracle pricelist: $_oracleAssetPriceList');
 
@@ -116,7 +118,7 @@ void main() async {
             assetAddress: _assetsList[i].toString(),
             assetConfig: _assetConfigList[i],
             aaveAssetPrice: _assetPriceList[i],
-            assetPrice: _oracleAssetPriceList[i] == -1
+            assetPrice: _oracleAssetPriceList[i] == BigInt.from(-1)
                 ? _assetPriceList[i]
                 : _oracleAssetPriceList[i],
           ));
@@ -126,7 +128,7 @@ void main() async {
             assetAddress: _assetsList[i].toString(),
             assetConfig: _assetConfigList[i],
             aaveAssetPrice: _assetPriceList[i],
-            assetPrice: _oracleAssetPriceList[i] == -1
+            assetPrice: _oracleAssetPriceList[i] == BigInt.from(-1)
                 ? _assetPriceList[i]
                 : _oracleAssetPriceList[i],
           );
@@ -149,53 +151,46 @@ void main() async {
   /// TODO: create 24hr cron repeat interval.
   _pollNewUsers() async {
     log.i('_pollNewUsers');
+    try {
+      /// get current block
+      final _currentBlock = await _web3.getCurrentBlock();
 
-    /// get current block
-    final _currentBlock = await _web3.getCurrentBlock();
+      ///TODO: get borrow events since last know block in increments of 1000
+      ///
+      final _fromBlock = _currentBlock - 1000;
+      final _borrowEvents = await _lendingPoolEventManager.queryBorrowEvent(
+          fromBlock: _fromBlock);
+      log.d('_borrowEvents found :${_borrowEvents.length}');
+      final _userList = _lendingPoolEventManager
+          .extractUserAddressFromBorrowEvent(_borrowEvents);
 
-    ///TODO: get borrow events since last know block in increments of 1000
-    ///
-    final _fromBlock = _currentBlock - 1000;
-    final _borrowEvents =
-        await _lendingPoolEventManager.queryBorrowEvent(fromBlock: _fromBlock);
-    log.d('_borrowEvents found :${_borrowEvents.length}');
-    final _userList = _lendingPoolEventManager
-        .extractUserAddressFromBorrowEvent(_borrowEvents);
-
-    await _userManager.getUserAccountData(userList: _userList);
+      await _userManager.getUserAccountData(userList: _userList);
+    } catch (e) {
+      log.e('error polling new users: $e');
+    }
   }
 
   await _pollNewUsers();
 
   // every 30 min,
   // get assets price
-  // convert price in ETH
 
-  /// Listens for asset price change
-  // update new price in db
+  /// For every asset available on aave.
+  /// Listen for price changes.
+  ///
   _oracle.priceListener();
-  // _oracle.listenForEthPriceUpdate().onData((data) {
-  //   print('data received: ${data.current}');
 
-  //   // _mongodService.updateReserveAssetPrice(
-  //   //     assetAddress: _config.ethTokenAddress,
-  //   //     newAssetPrice: data.current.toDouble());
-  // });
+  // var newData = await _oracle.getTokenUser(
+  //   tokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
+  //   tokenPrice: BigInt.parse('9047136687690356000'),
+  // );
+  // List liquidatable = newData
+  //     .where((user) => BigInt.parse(user.genHf) < BigInt.from(10000))
+  //     .toList();
 
-  /// for every asset available on aave
-  /// listen for price emmit
-  /// convert price in ETH
-  /// calc % change from price know to aave
-  /// if the price % change >= than the aave price discovery threshold
-  /// for each user:
-  /// calc new health factor
-  /// if new hf < 1 liquidate collateral with highest bonus
-  /// update price from aave
-  /// if price % change is < than aave price discovery threshold
-  /// update user account data
-  /// update price from aave
-  // final AaveUserManager _userManager =
-  //     AaveUserManager(web3: _web3, config: _config, mongod: _mongod);
+  // log.w(liquidatable);
+
+  /// TODO: call samrt contract to liquidate.
 
   /// Terminate all conections
   _web3.dispose();

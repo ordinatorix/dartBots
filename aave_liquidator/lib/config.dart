@@ -134,7 +134,7 @@ class Config {
       '0x3115d1449a7b732c986cba18244e897a450f61e1bb8d589cd2e69e6c8924f9f7';
 
   /// minimum health factor to take interest in. value is in wei
-  final double focusHealthFactor = 1500000000000000000;
+  final BigInt focusHealthFactor = BigInt.parse('1500000000000000000');
 
   /// Liquidators can only close a certain amount of collateral defined by a close factor.
   /// Currently the close factor is 0.5. In other words, liquidators can only liquidate a

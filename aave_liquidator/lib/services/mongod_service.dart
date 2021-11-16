@@ -5,6 +5,7 @@ import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:mongo_dart/mongo_dart.dart';
+import 'package:aave_liquidator/token_address.dart' as token;
 
 final log = getLogger('MongodService');
 
@@ -98,10 +99,13 @@ class MongodService {
   bulkUpdateUsers(List<AaveUserAccountData> userDataList) async {
     log.i('bulkUpdateUsers');
     try {
+      /// Setup bulk operation
       var bulk = OrderedBulk(_userStore);
 
       for (AaveUserAccountData userData in userDataList) {
+        ///Convert to json
         final _jsonUserData = userData.toJson();
+
         Map<String, dynamic>? data = await _userStore
             .findOne(where.eq('userAddress', _jsonUserData['userAddress']));
 
@@ -132,6 +136,62 @@ class MongodService {
     } catch (e) {
       log.e('error bulk updating users: $e');
     }
+  }
+
+  /// Get users with [tokenAddress] as collateral asset.
+  Future<List<AaveUserAccountData>> getCollateralUsers(
+      String tokenAddress) async {
+    log.i('getCollateralUsers | token address: $tokenAddress');
+
+    List<AaveUserAccountData> users = await _userStore
+        .find(where.gt('collateralReserve.$tokenAddress', '0'))
+        .map((event) => _parseUserAccountData(event))
+        .toList();
+
+    log.d('collateral users: $users');
+
+    return users;
+  }
+
+  /// Get users with [tokenAddress] as debt asset.
+  Future<List<AaveUserAccountData>> getDebtUsers(String tokenAddress) async {
+    log.i('getDetUsers | token address: $tokenAddress');
+
+    List<AaveUserAccountData> users = await _userStore
+        .find({
+          r"$and": [
+            {
+              r"$or": [
+                {
+                  "variableDebtReserve.$tokenAddress": {r"$gt": '0'}
+                },
+                {
+                  "stableDebtReserve.$tokenAddress": {r"$gt": '0'}
+                }
+              ]
+            }
+          ]
+        })
+        .map((event) => _parseUserAccountData(event))
+        .toList();
+    log.d('debt users: $users');
+
+    return users;
+  }
+
+  AaveUserAccountData _parseUserAccountData(event) {
+    return AaveUserAccountData(
+        userAddress: event['userAddress'],
+        totalCollateralEth: BigInt.parse(event['totalCollateralEth']),
+        totalDebtETH: BigInt.parse(event['totalDebtETH']),
+        availableBorrowsETH: BigInt.parse(event['availableBorrowsETH']),
+        currentLiquidationThreshold:
+            BigInt.parse(event['currentLiquidationThreshold']),
+        ltv: BigInt.parse(event['ltv']),
+        healthFactor: BigInt.parse(event['healthFactor']),
+        collateralReserve: event['collateralReserve'],
+        variableDebtReserve: event['variableDebtReserve'],
+        stableDebtReserve: event['stableDebtReserve']);
   }
 
   //
@@ -169,29 +229,37 @@ class MongodService {
       assetSymbol: data['assetSymbol'],
       assetAddress: data['assetAddress'],
       assetConfig: AaveReserveConfigData(
-        liquidationThreshold: data['assetConfiguration']
-            ['liquidationThreshold'],
-        liquidationBonus: data['assetConfiguration']['liquidationBonus'],
+        liquidationThreshold:
+            BigInt.parse(data['assetConfiguration']['liquidationThreshold']),
+        liquidationBonus:
+            BigInt.parse(data['assetConfiguration']['liquidationBonus']),
+        decimals: BigInt.parse(data['assetConfiguration']['decimals']),
       ),
-      assetPrice: data['assetPrice'],
-      aaveAssetPrice: data['aaveAssetPrice'],
+      assetPrice: BigInt.parse(data['assetPrice']),
+      aaveAssetPrice: BigInt.parse(data['aaveAssetPrice']),
     );
   }
 
   Future<bool> resetReserveData(List<AaveReserveData> reserveDataList) async {
-    log.i('resetReserveData');
-    await _reserveStore.drop();
-    List<Map<String, dynamic>> documents =
-        reserveDataList.map((e) => e.toJson()).toList();
+    log.i(
+        'resetReserveData | reserveDataList length: ${reserveDataList.length}');
+    try {
+      await _reserveStore.drop();
+      List<Map<String, dynamic>> documents =
+          reserveDataList.map((e) => e.toJson()).toList();
 
-    var res = await _reserveStore.insertMany(documents);
-    return res.success;
+      var res = await _reserveStore.insertMany(documents);
+      return res.success;
+    } catch (e) {
+      log.e('error resetting reserve data in db: $e');
+      throw 'db update failed';
+    }
   }
 
   /// Updates the asset price with price from chainlink
   updateReserveAssetPrice({
     required String assetAddress,
-    required double newAssetPrice,
+    required BigInt newAssetPrice,
   }) async {
     try {
       final reserveStore = _db.collection(_config.aaveReserveCollectionName);

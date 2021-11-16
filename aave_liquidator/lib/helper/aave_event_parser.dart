@@ -27,18 +27,18 @@ class AaveEventParser {
         userAddress: _decodedResult[1].toString(),
         onBehalfOf: _decodedResult[2].toString(),
         reserve: _decodedResult[0].toString(),
-        amount: double.parse(_decodedResult[3].toString()),
-        borrowRateMode: double.parse(_decodedResult[4].toString()),
-        borrowRate: double.parse(_decodedResult[5].toString()),
+        amount: BigInt.parse(_decodedResult[3].toString()),
+        borrowRateMode: BigInt.parse(_decodedResult[4].toString()),
+        borrowRate: BigInt.parse(_decodedResult[5].toString()),
       );
     } else {
       parsedBorrowEvent = AaveBorrowEvent(
         userAddress: borrow!.user.toString(),
         onBehalfOf: borrow.onBehalfOf.toString(),
         reserve: borrow.reserve.toString(),
-        amount: borrow.amount.toDouble(),
-        borrowRateMode: borrow.borrowRateMode.toDouble(),
-        borrowRate: borrow.borrowRate.toDouble(),
+        amount: borrow.amount,
+        borrowRateMode: borrow.borrowRateMode,
+        borrowRate: borrow.borrowRate,
       );
     }
 
@@ -58,14 +58,14 @@ class AaveEventParser {
         reserve: _decodedResult[0].toString(),
         userAddress: _decodedResult[1].toString(),
         onBehalfOf: _decodedResult[2].toString(),
-        amount: double.parse(_decodedResult[3].toString()),
+        amount: BigInt.parse(_decodedResult[3].toString()),
       );
     } else {
       parsedDepositEvent = AaveDepositEvent(
         reserve: deposit!.reserve.toString(),
         userAddress: deposit.user.toString(),
         onBehalfOf: deposit.onBehalfOf.toString(),
-        amount: deposit.amount.toDouble(),
+        amount: deposit.amount,
       );
     }
 
@@ -85,14 +85,14 @@ class AaveEventParser {
         reserve: _decodedResult[0].toString(),
         userAddress: _decodedResult[1].toString(),
         repayer: _decodedResult[2].toString(),
-        amount: double.parse(_decodedResult[3].toString()),
+        amount: BigInt.parse(_decodedResult[3].toString()),
       );
     } else {
       parsedRepayEvent = AaveRepayEvent(
         reserve: repay!.reserve.toString(),
         userAddress: repay.user.toString(),
         repayer: repay.repayer.toString(),
-        amount: repay.amount.toDouble(),
+        amount: repay.amount,
       );
     }
 
@@ -113,14 +113,14 @@ class AaveEventParser {
         reserve: _decodedResult[0].toString(),
         userAddress: _decodedResult[1].toString(),
         to: _decodedResult[2].toString(),
-        amount: double.parse(_decodedResult[3].toString()),
+        amount: BigInt.parse(_decodedResult[3].toString()),
       );
     } else {
       parsedWithdrawEvent = AaveWithdrawEvent(
         reserve: withdraw!.reserve.toString(),
         userAddress: withdraw.user.toString(),
         to: withdraw.to.toString(),
-        amount: withdraw.amount.toDouble(),
+        amount: withdraw.amount,
       );
     }
     log.d(parsedWithdrawEvent);
