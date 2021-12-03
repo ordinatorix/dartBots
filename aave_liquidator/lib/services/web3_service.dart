@@ -13,6 +13,7 @@ import 'package:aave_liquidator/model/aave_deposit_event.dart';
 import 'package:aave_liquidator/model/aave_repay_event.dart';
 
 import 'package:web3dart/web3dart.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 final log = getLogger('Web3Service');
 
@@ -30,7 +31,7 @@ class Web3Service {
   late Web3Client web3Client;
   late int chainId;
   final Client _httpClient = Client();
-
+  
   late CredentialsWithKnownAddress credentials;
 
   late List<AaveBorrowEvent> queriedBorrowEvent;
@@ -56,7 +57,10 @@ class Web3Service {
   Future<void> _connectViaRpcApi() async {
     log.i('connecting using Infura');
     try {
-      web3Client = Web3Client(_config.mainnetApiUrl, _httpClient);
+      web3Client = Web3Client(_config.mainnetApiUrl, _httpClient,
+          socketConnector: () =>
+              WebSocketChannel.connect(Uri.parse(_config.mainnetApiWssUri))
+                  .cast<String>());
       chainId = await web3Client.getNetworkId();
       log.v('current chainID: $chainId');
       _isListenning = await web3Client.isListeningForNetwork();

@@ -1,13 +1,14 @@
-// import 'dart:io';
-import 'package:aave_liquidator/token_address.dart';
+
+
 import 'package:dotenv/dotenv.dart';
-// import 'package:path/path.dart';
+
 import 'package:web3dart/web3dart.dart';
 
 class Config {
   /// Infura api url
   final String kovanApiUrl = 'https://kovan.infura.io/v3/${env['API_KEY']}';
   final String mainnetApiUrl = 'https://mainnet.infura.io/v3/${env['API_KEY']}';
+  final String mainnetApiWssUri = 'wss://mainnet.infura.io/ws/v3/${env['API_KEY']}';
 
   /// Aave Mainnet Contract addresses
   /// TODO: group address by network
