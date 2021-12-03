@@ -6,7 +6,6 @@ import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 
-
 final log = getLogger('MongodService');
 
 class MongodService {
@@ -18,9 +17,9 @@ class MongodService {
   late Config _config;
   late Db _db;
   late DbCollection _userStore;
+  late DbCollection _reserveStore;
   final Completer<bool> isConnected = Completer<bool>();
 
-  late DbCollection _reserveStore;
   Future<bool> get isReady => isConnected.future;
 
   /// Connect to _db.

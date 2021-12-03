@@ -3,14 +3,9 @@ import 'dart:async';
 import 'package:aave_liquidator/config.dart';
 import 'package:aave_liquidator/logger.dart';
 
-import 'package:aave_liquidator/model/aave_withdraw_event.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:http/http.dart';
-
-import 'package:aave_liquidator/model/aave_borrow_event.dart';
-import 'package:aave_liquidator/model/aave_deposit_event.dart';
-import 'package:aave_liquidator/model/aave_repay_event.dart';
 
 import 'package:web3dart/web3dart.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -31,16 +26,10 @@ class Web3Service {
   late Web3Client web3Client;
   late int chainId;
   final Client _httpClient = Client();
-  
+
   late CredentialsWithKnownAddress credentials;
 
-  late List<AaveBorrowEvent> queriedBorrowEvent;
-  late List<AaveDepositEvent> queriedDepositEvent;
-  late List<AaveRepayEvent> queriedRepayEvent;
-  late List<AaveWithdrawEvent> queriedWithdrawEvent;
-  List<String> userFromEvents = [];
-  List<EthereumAddress> aaveReserveList = [];
-  final pare = Completer<bool>();
+  final Completer<bool> pare = Completer<bool>();
 
   _initWeb3Client() async {
     await _connectViaRpcApi();
@@ -57,10 +46,11 @@ class Web3Service {
   Future<void> _connectViaRpcApi() async {
     log.i('connecting using Infura');
     try {
-      web3Client = Web3Client(_config.mainnetApiUrl, _httpClient,
-          socketConnector: () =>
-              WebSocketChannel.connect(Uri.parse(_config.mainnetApiWssUri))
-                  .cast<String>());
+      web3Client =
+          Web3Client(_config.mainnetApiUrl, _httpClient, socketConnector: () {
+        return WebSocketChannel.connect(Uri.parse(_config.mainnetApiWssUri))
+            .cast<String>();
+      });
       chainId = await web3Client.getNetworkId();
       log.v('current chainID: $chainId');
       _isListenning = await web3Client.isListeningForNetwork();
