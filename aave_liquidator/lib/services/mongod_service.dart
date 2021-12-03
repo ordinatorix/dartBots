@@ -5,7 +5,7 @@ import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:mongo_dart/mongo_dart.dart';
-import 'package:aave_liquidator/token_address.dart' as token;
+
 
 final log = getLogger('MongodService');
 
