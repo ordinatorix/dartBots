@@ -1,3 +1,34 @@
+# GETTING STARTED!
+
+- Run mongo database
+```
+mongod --dpath <path_to_db>/data/db
+```
+- check if db is running:
+```
+$mongosh
+test> show dbs
+test> show collections
+test> show collections
+
+#some useful db commands:
+test> db.aaveReserve.find()
+test> db.aaveReserve.countDocuments()
+test> db.aaveReserve.drop()
+test> exit()
+```
+- run/debug app in vs code.
+
+
+
+
+
+
+
+
+
+
+## Methodology brainstorm.
 
 the percentage drop in collateral value can be calculated as follow:
 * liquidation collateral price(LCP) = debt/liquidation_treshhold
