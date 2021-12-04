@@ -46,9 +46,8 @@ class Web3Service {
   Future<void> _connectViaRpcApi() async {
     log.i('connecting using Infura');
     try {
-      web3Client =
-          Web3Client(_config.mainnetApiUrl, _httpClient, socketConnector: () {
-        return WebSocketChannel.connect(Uri.parse(_config.mainnetApiWssUri))
+      web3Client = Web3Client(_config.apiUrl, _httpClient, socketConnector: () {
+        return WebSocketChannel.connect(Uri.parse(_config.apiWssUri))
             .cast<String>();
       });
       chainId = await web3Client.getNetworkId();

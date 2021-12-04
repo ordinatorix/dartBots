@@ -51,7 +51,7 @@ class MongodService {
   _setupCollections() async {
     log.i('_setupCollections');
     await isReady;
-    _reserveStore = _db.collection(_config.aaveReserveCollectionName);
+    _reserveStore = _db.collection(_config.aaveReserveCollection);
     _userStore = _db.collection(_config.aaveUserCollection);
   }
 
@@ -261,7 +261,7 @@ class MongodService {
     required BigInt newAssetPrice,
   }) async {
     try {
-      final reserveStore = _db.collection(_config.aaveReserveCollectionName);
+      final reserveStore = _db.collection(_config.aaveReserveCollection);
       await reserveStore.updateOne(
         where.eq('reserveAddress', assetAddress),
         modify.set('assetPrice', newAssetPrice),
@@ -274,7 +274,7 @@ class MongodService {
   /// Updates all data of a given asset reserve.
   updateAaveReserve(AaveReserveData reserveData) async {
     try {
-      final reserveStore = _db.collection(_config.aaveReserveCollectionName);
+      final reserveStore = _db.collection(_config.aaveReserveCollection);
       await reserveStore.replaceOne(
         where.eq('reserveAddress', reserveData.assetAddress),
         reserveData.toJson(),
