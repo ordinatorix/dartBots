@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:aave_liquidator/config.dart';
-import 'package:aave_liquidator/contract_helpers/chainlink_contracts.dart';
+import 'package:aave_liquidator/helper/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';

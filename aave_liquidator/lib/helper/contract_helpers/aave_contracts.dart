@@ -35,6 +35,7 @@ class AaveContracts {
         address: _config.lendingPoolAddressProviderContractAddress,
         client: _web3service.web3Client,
         chainId: _web3service.chainId);
+
     lendingPoolProxyAddress =
         await aaveAddressProviderContract.getLendingPool();
     protocolDataProviderAdress = _config
@@ -45,14 +46,12 @@ class AaveContracts {
 
   _setupContracts() {
     lendingPoolContract = Aave_lending_pool(
-        address:
-            lendingPoolProxyAddress, //_config.lendingPoolProxyContractAddress,
+        address: lendingPoolProxyAddress,
         client: _web3service.web3Client,
         chainId: _web3service.chainId);
 
     protocolDataProviderContract = Aave_protocol_data_provider(
-        address:
-            protocolDataProviderAdress, // _config.protocolDataProviderContractAddress,
+        address: protocolDataProviderAdress,
         client: _web3service.web3Client,
         chainId: _web3service.chainId);
 

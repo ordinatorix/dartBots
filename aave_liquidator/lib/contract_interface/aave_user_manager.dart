@@ -1,7 +1,7 @@
 import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/abi/aave_abi/aave_protocol_data_provider.g.dart';
 import 'package:aave_liquidator/config.dart';
-import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
+import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/helper/user_parser.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';

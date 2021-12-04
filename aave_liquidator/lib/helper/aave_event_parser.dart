@@ -1,5 +1,5 @@
 import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool.g.dart';
-import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
+import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_deposit_event.dart';
@@ -126,4 +126,15 @@ class AaveEventParser {
     log.d(parsedWithdrawEvent);
     return parsedWithdrawEvent;
   }
+
+  /// ---------------------Aave configs--------------------------------
+  /// Encoded topics
+  final String encodedBorrowEventTopic =
+      '0xc6a898309e823ee50bac64e45ca8adba6690e99e7841c45d754e2a38e9019d9b';
+  final String encodedDepositEventTopic =
+      '0xde6857219544bb5b7746f48ed30be6386fefc61b2f864cacf559893bf50fd951';
+  final String encodedRepayEventTopic =
+      '0x4cdde6e09bb755c9a5589ebaec640bbfedff1362d4b255ebf8339782b9942faa';
+  final String encodedWithdrawEventTopic =
+      '0x3115d1449a7b732c986cba18244e897a450f61e1bb8d589cd2e69e6c8924f9f7';
 }
