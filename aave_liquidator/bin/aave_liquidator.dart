@@ -52,7 +52,7 @@ void main() async {
   /// wait for chainlink contracts to be ready.
   await _chainlinkContracts.isReady;
 
-  /// setup oracle.
+  /// setup price oracle.
   final ChainLinkPriceOracle _oracle = ChainLinkPriceOracle(
     chainlinkContracts: _chainlinkContracts,
     config: _config,

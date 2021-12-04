@@ -11,6 +11,8 @@ import 'package:aave_liquidator/token_address.dart' as token;
 
 final log = getLogger('ChainLinkPriceOracle');
 
+/// Listens for price update of assets.
+///
 class ChainLinkPriceOracle {
   //TODO: listen for price changes for each asset in reserve.
 

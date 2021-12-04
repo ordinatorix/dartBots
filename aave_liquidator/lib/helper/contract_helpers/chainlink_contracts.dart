@@ -7,6 +7,8 @@ import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:aave_liquidator/token_address.dart' as token;
 
+/// sets up the chainlink contracts
+///
 class ChainlinkContracts {
   late Web3Service _web3service;
   late Config _config;
