@@ -1,6 +1,3 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/contract_interface/aave_lending_pool_event_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_reserve_manager.dart';
@@ -9,8 +6,10 @@ import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
 import 'package:aave_liquidator/enums/deployed_networks.dart';
 import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/helper/contract_helpers/chainlink_contracts.dart';
+import 'package:aave_liquidator/helper/network_prompt.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
+
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:dotenv/dotenv.dart';
@@ -26,24 +25,8 @@ void main() async {
   /// Load env
   load();
 
-  /// prompt user to select network.
-  print(
-      'Select Network:\n 0:kovan testnet\n 1:Mainnet\n 2:Polygon\n 3:Avalanche');
-
-  int _requireNetworkSelection() {
-    String? _userInput = stdin.readLineSync(encoding: utf8);
-
-    if (_userInput != null && _userInput.isNotEmpty) {
-      return int.parse(_userInput.trim());
-    } else {
-      print('invalid answer. Please review documentation.');
-
-      exit(1);
-    }
-  }
-
-  // int _userSelection = _requireNetworkSelection();
-  int _userSelection = 1;
+  int _userSelection = requireNetworkSelection();
+  // int _userSelection = 1;
   var _selectedNetwork = DeployedNetwork.values[_userSelection];
 
   print('running app using $_selectedNetwork');

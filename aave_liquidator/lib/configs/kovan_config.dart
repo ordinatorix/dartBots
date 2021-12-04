@@ -1,4 +1,3 @@
-// kovanAddresses() {
 import 'package:dotenv/dotenv.dart';
 import 'package:web3dart/credentials.dart';
 
@@ -29,4 +28,3 @@ final String aaveUserCollection = 'kovanAaveUsers';
 
 /// Aave reserve collection name
 final String aaveReserveCollection = 'kovanAaveReserve';
-// }
