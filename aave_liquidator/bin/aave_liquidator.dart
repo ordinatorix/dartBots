@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:aave_liquidator/config.dart';
+import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/contract_interface/aave_lending_pool_event_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_reserve_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_user_manager.dart';
 import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
+import 'package:aave_liquidator/enums/deployed_networks.dart';
 import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/helper/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
@@ -41,7 +42,8 @@ void main() async {
     }
   }
 
-  int _userSelection = _requireNetworkSelection();
+  // int _userSelection = _requireNetworkSelection();
+  int _userSelection = 1;
   var _selectedNetwork = DeployedNetwork.values[_userSelection];
 
   print('running app using $_selectedNetwork');

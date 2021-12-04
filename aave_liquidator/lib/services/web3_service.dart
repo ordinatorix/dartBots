@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:aave_liquidator/config.dart';
+import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/logger.dart';
 
 import 'package:aave_liquidator/services/mongod_service.dart';

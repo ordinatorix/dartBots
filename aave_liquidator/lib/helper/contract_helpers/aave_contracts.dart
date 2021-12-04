@@ -2,7 +2,7 @@ import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool_address_provider.g.dart';
 import 'package:aave_liquidator/abi/aave_abi/aave_price_oracle.g.dart';
 import 'package:aave_liquidator/abi/aave_abi/aave_protocol_data_provider.g.dart';
-import 'package:aave_liquidator/config.dart';
+import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:web3dart/web3dart.dart';
 
