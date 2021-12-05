@@ -2,6 +2,7 @@ import 'package:aave_liquidator/enums/deployed_networks.dart';
 import 'package:dotenv/dotenv.dart';
 import './mainnet_config.dart' as mainnet;
 import './kovan_config.dart' as kovan;
+import './local_network_config.dart' as local_net;
 import 'package:web3dart/web3dart.dart';
 
 class Config {
@@ -20,6 +21,12 @@ class Config {
 
   _setupNetwork(DeployedNetwork network) {
     switch (network) {
+      case DeployedNetwork.local:
+        {
+          _setupLocalNet();
+        }
+
+        break;
       case DeployedNetwork.kovan:
         {
           _setupKovan();
@@ -41,6 +48,9 @@ class Config {
 
         break;
       default:
+        () {
+          _setupLocalNet();
+        };
     }
   }
 
@@ -67,7 +77,18 @@ class Config {
     aaveUserCollection = mainnet.aaveUserCollection;
     aaveReserveCollection = mainnet.aaveReserveCollection;
   }
-  _setupLocalNet(){}
+
+  _setupLocalNet() {
+    apiUrl = local_net.apiUrl;
+    apiWssUri = local_net.apiWssUri;
+    lendingPoolAddressProviderContractAddress =
+        local_net.lendingPoolAddressProviderContractAddress;
+    protocolDataProviderContractAddress =
+        local_net.protocolDataProviderContractAddress;
+    feedRegistryContractAddress = local_net.feedRegistryContractAddress;
+    aaveUserCollection = local_net.aaveUserCollection;
+    aaveReserveCollection = local_net.aaveReserveCollection;
+  }
 
   // /// Token Symbol
   final String ethToken = 'ETH';

@@ -44,7 +44,7 @@ class Web3Service {
 
   /// Connect to blockchain using address in localhost
   Future<void> _connectViaRpcApi() async {
-    log.i('connecting using Infura');
+    log.i('connecting using to blockchain');
     try {
       web3Client = Web3Client(_config.apiUrl, _httpClient, socketConnector: () {
         return WebSocketChannel.connect(Uri.parse(_config.apiWssUri))
@@ -53,6 +53,7 @@ class Web3Service {
       chainId = await web3Client.getNetworkId();
       log.v('current chainID: $chainId');
       _isListenning = await web3Client.isListeningForNetwork();
+      await getCurrentBlock();
       log.v('web3Client is listening: $_isListenning');
     } catch (e) {
       log.e('error connecting to blockchain: $e');
@@ -62,7 +63,7 @@ class Web3Service {
   /// Connect wallet
   _getCredentials() {
     log.i('getting credentials');
-    credentials = EthPrivateKey.fromHex(env['WALLET_PRIVATE_KEY']!);
+    credentials = EthPrivateKey.fromHex(env['WALLET_PRIVATE_KEY_0']!);
     log.v('credential address: ${credentials.address}');
   }
 
