@@ -8,6 +8,7 @@ import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/helper/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/helper/network_prompt.dart';
 import 'package:aave_liquidator/logger.dart';
+import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 
 import 'package:aave_liquidator/services/mongod_service.dart';
@@ -19,14 +20,14 @@ import 'package:web3dart/web3dart.dart';
 final log = getLogger('main');
 void main() async {
   /// set debug level
-  Logger.level = Level.info;
+  Logger.level = Level.debug;
   log.v('Success, We\'re In!');
 
   /// Load env
   load();
 
-  int _userSelection = requireNetworkSelection();
-  // int _userSelection = 1;
+  // int _userSelection = requireNetworkSelection();
+  int _userSelection = 0;
   var _selectedNetwork = DeployedNetwork.values[_userSelection];
 
   print('running app using $_selectedNetwork');
@@ -167,12 +168,20 @@ void main() async {
       /// get current block
       final _currentBlock = await _web3.getCurrentBlock();
 
-      ///TODO: get borrow events since last know block in increments of 1000
-      ///
-      final _fromBlock = _currentBlock - 1000;
-      final _borrowEvents = await _lendingPoolEventManager.queryBorrowEvent(
-          fromBlock: _fromBlock);
-      log.d('_borrowEvents found :${_borrowEvents.length}');
+      List<AaveBorrowEvent> _borrowEvents = [];
+      final startingBlock = 12341000;
+      final increment = 2000;
+      for (var i = startingBlock; i <= _currentBlock; i += increment) {
+        log.d('segment: $i');
+        final _fromBlock = i;
+        final _toBlock = i + increment;
+        print('from:$_fromBlock');
+        print('to:$_toBlock');
+        final _borrowEventsSegment = await _lendingPoolEventManager
+            .queryBorrowEvent(fromBlock: _fromBlock, toBlock: _toBlock);
+        log.d('_borrowEvents found :${_borrowEventsSegment.length}');
+        _borrowEvents.addAll(_borrowEventsSegment);
+      }
       final _userList = _lendingPoolEventManager
           .extractUserAddressFromBorrowEvent(_borrowEvents);
 

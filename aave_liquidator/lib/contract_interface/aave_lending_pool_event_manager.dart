@@ -8,7 +8,7 @@ import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:aave_liquidator/helper/aave_event_parser.dart';
 
-final log = getLogger('AaveLendingPoolEventListeners');
+final log = getLogger('AaveLendingPoolEventManager');
 
 class AaveLendingPoolEventManager {
   AaveLendingPoolEventManager({
