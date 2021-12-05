@@ -3,8 +3,11 @@ import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool_address_provider.
 import 'package:aave_liquidator/abi/aave_abi/aave_price_oracle.g.dart';
 import 'package:aave_liquidator/abi/aave_abi/aave_protocol_data_provider.g.dart';
 import 'package:aave_liquidator/configs/config.dart';
+import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:web3dart/web3dart.dart';
+
+final log = getLogger('AaveContracts');
 
 class AaveContracts {
   AaveContracts(Web3Service web3, Config config) {
@@ -45,6 +48,7 @@ class AaveContracts {
   }
 
   _setupContracts() {
+    log.v('lending Pool Address: $lendingPoolProxyAddress');
     lendingPoolContract = Aave_lending_pool(
         address: lendingPoolProxyAddress,
         client: _web3service.web3Client,

@@ -3,9 +3,12 @@ import 'dart:async';
 import 'package:aave_liquidator/abi/chainlink_abi/aggregator_abi/chainlink_eth_denomination_price_aggregator.g.dart';
 import 'package:aave_liquidator/abi/chainlink_abi/chainlink_feed_registry.g.dart';
 import 'package:aave_liquidator/configs/config.dart';
+import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:aave_liquidator/token_address.dart' as token;
+
+final log = getLogger('ChainlinkContracts');
 
 /// sets up the chainlink contracts
 ///
