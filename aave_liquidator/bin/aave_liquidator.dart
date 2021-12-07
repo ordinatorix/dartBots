@@ -20,14 +20,14 @@ import 'package:web3dart/web3dart.dart';
 final log = getLogger('main');
 void main() async {
   /// set debug level
-  Logger.level = Level.debug;
+  Logger.level = Level.verbose;
   log.v('Success, We\'re In!');
 
   /// Load env
   load();
 
-  // int _userSelection = requireNetworkSelection();
-  int _userSelection = 0;
+  int _userSelection = requireNetworkSelection();
+  // int _userSelection = 0;
   var _selectedNetwork = DeployedNetwork.values[_userSelection];
 
   print('running app using $_selectedNetwork');
@@ -74,7 +74,6 @@ void main() async {
 
   final AaveLendingPoolEventManager _lendingPoolEventManager =
       AaveLendingPoolEventManager(
-    // config: _config,
     web3: _web3,
     aaveContracts: _aaveContracts,
   );
