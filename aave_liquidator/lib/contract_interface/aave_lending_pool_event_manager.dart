@@ -39,7 +39,7 @@ class AaveLendingPoolEventManager {
       for (var event in eventsList) {
         if (!_userList.contains(event.onBehalfOf)) {
           _userList.add(event.onBehalfOf);
-          log.v('adding ${event.onBehalfOf} to list');
+          
         }
       }
       log.v('_userList: $_userList');
@@ -84,13 +84,13 @@ class AaveLendingPoolEventManager {
         topics: [
           [_eventParser.encodedBorrowEventTopic]
         ],
-      );
+      ); 
 
       /// Query block for matching logs.
       List<FilterEvent> _borrowEvent =
           await _web3service.web3Client.getLogs(_filter);
 
-      log.v('borrow event: $_borrowEvent');
+      // log.v('borrow event: $_borrowEvent');
 
       return _borrowEvent
           .map((e) => _eventParser.parseEventToAaveBorrowEvent(filterEvent: e))

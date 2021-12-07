@@ -15,7 +15,6 @@ final log = getLogger('AaveUserManager');
 class AaveUserManager {
   late MongodService _store;
   late Config _config;
-  final UserParser _parser = UserParser();
   late AaveContracts _aaveContracts;
 
   AaveUserManager({
@@ -27,10 +26,8 @@ class AaveUserManager {
     _config = config;
     _aaveContracts = aaveContracts;
   }
-
+  final UserParser _parser = UserParser();
   late List<AaveReserveData> _aaveReserveList;
-
-  /// get reservelist from db.
 
   /// Query specific users
   /// TODO: using [getUserAccountData] update the db with new data from userwith  UltraLow Health Factor (ULHF).
@@ -51,26 +48,56 @@ class AaveUserManager {
       log.i(
           'getting user account data of ${userList.length} users.\n Please wait...');
       List<AaveUserAccountData> _aaveUserList = [];
+      List<AaveUserAccountData> _aaveRiskUserList = [];
+      // Iterate throught the list of users and get their user account data.
+      await Future.wait(
+        userList.map((user) async {
+          log.wtf('WTF: user addr: $user');
+          EthereumAddress _userAddress = EthereumAddress.fromHex(user);
 
-      /// Iterate throught the list of users and get their user account data.
-      for (var user in userList) {
-        EthereumAddress _userAddress = EthereumAddress.fromHex(user);
-        final GetUserAccountData userAccountData = await _aaveContracts
-            .lendingPoolContract
-            .getUserAccountData(_userAddress);
+          final GetUserAccountData userAccountData = await _aaveContracts
+              .lendingPoolContract
+              .getUserAccountData(_userAddress);
+          log.w('ogus:  ${userList.indexOf(user)}');
 
-        /// Only keep users with a health factor below [_config.focusHealthFactor].
-        if (userAccountData.healthFactor < _config.focusHealthFactor) {
-          AaveUserReserveData _userReserveData =
-              await _getAaveUserReserveData(userAddress: _userAddress);
-          AaveUserAccountData _userData = _parser.parseUserAccountData(
-              userAddress: _userAddress,
-              userAccountData: userAccountData,
-              userReserveData: _userReserveData);
+          /// Only keep users with a health factor below [_config.focusHealthFactor].
+          if (userAccountData.healthFactor < _config.focusHealthFactor) {
+            log.d('found new user at risk');
+            // Get reserve data of assets used by user.
+            AaveUserReserveData _userReserveData =
+                await _getAaveUserReserveData(userAddress: _userAddress);
+            // parse userdata.
+            AaveUserAccountData _userData = _parser.parseUserAccountData(
+                userAddress: _userAddress,
+                userAccountData: userAccountData,
+                userReserveData: _userReserveData);
 
-          _aaveUserList.add(_userData);
-        }
-      }
+            _aaveUserList.add(_userData);
+            log.wtf('userAdded: ${_aaveUserList.length}');
+          } else {
+            log.w('safe user');
+          }
+        }).toList(),
+      );
+
+      // for (var user in userList) {
+      //   EthereumAddress _userAddress = EthereumAddress.fromHex(user);
+      //   final GetUserAccountData userAccountData = await _aaveContracts
+      //       .lendingPoolContract
+      //       .getUserAccountData(_userAddress);
+
+      //   /// Only keep users with a health factor below [_config.focusHealthFactor].
+      //   if (userAccountData.healthFactor < _config.focusHealthFactor) {
+      //     AaveUserReserveData _userReserveData =
+      //         await _getAaveUserReserveData(userAddress: _userAddress);
+      //     AaveUserAccountData _userData = _parser.parseUserAccountData(
+      //         userAddress: _userAddress,
+      //         userAccountData: userAccountData,
+      //         userReserveData: _userReserveData);
+
+      //     _aaveUserList.add(_userData);
+      //   }
+      // }
 
       /// Bulk update db.
       await _store.bulkUpdateUsers(_aaveUserList);
@@ -82,7 +109,7 @@ class AaveUserManager {
     }
   }
 
-  /// Get user reserve data for specific asset.
+  /// Get user reserve data for assets used by user.
   Future<AaveUserReserveData> _getAaveUserReserveData({
     required EthereumAddress userAddress,
   }) async {
@@ -100,6 +127,7 @@ class AaveUserManager {
       );
 
       for (final collateral in _userReserves['collateral']!) {
+        log.d('getting user collateral reserve');
         GetUserReserveData userReserveData = await _aaveContracts
             .protocolDataProviderContract
             .getUserReserveData(
@@ -115,6 +143,7 @@ class AaveUserManager {
         );
       }
       for (final debt in _userReserves['debt']!) {
+        log.d('getting user debt reserve');
         GetUserReserveData userReserveData = await _aaveContracts
             .protocolDataProviderContract
             .getUserReserveData(

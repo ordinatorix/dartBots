@@ -18,7 +18,7 @@ class AaveEventParser {
   /// parse borrow event data and topics
   AaveBorrowEvent parseEventToAaveBorrowEvent(
       {Borrow? borrow, FilterEvent? filterEvent}) {
-    log.v('parsing borrow event');
+    // log.v('parsing borrow event');
     late AaveBorrowEvent parsedBorrowEvent;
     if (filterEvent != null) {
       final List _decodedResult = _aaveContracts.contractBorrowEvent
