@@ -2,7 +2,7 @@ class AaveWithdrawEvent {
   String reserve;
   String userAddress;
   String to;
-  double amount;
+  BigInt amount;
 
   AaveWithdrawEvent({
     required this.reserve,

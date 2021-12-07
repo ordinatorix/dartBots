@@ -2,9 +2,9 @@ class AaveBorrowEvent {
   String reserve;
   String userAddress;
   String onBehalfOf;
-  double amount;
-  double borrowRateMode;
-  double borrowRate;
+  BigInt amount;
+  BigInt borrowRateMode;
+  BigInt borrowRate;
 
   AaveBorrowEvent({
     required this.reserve,
