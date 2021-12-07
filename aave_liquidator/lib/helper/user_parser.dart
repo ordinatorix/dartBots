@@ -36,7 +36,7 @@ class UserParser {
     required List userConfig,
     required List<AaveReserveData> aaveReserveList,
   }) {
-    log.v('mix and match');
+    log.v('Format user data');
 
     /// for each reserve pair in the list,
     /// if the reserve pair is "10"
@@ -44,7 +44,7 @@ class UserParser {
     List<String> debtReserve = [];
     for (var i = 0; i < aaveReserveList.length; i++) {
       if (userConfig[i] == '10') {
-        log.v('adding ${aaveReserveList[i].assetAddress}to collateral');
+        log.v('adding ${aaveReserveList[i].assetAddress} to collateral');
 
         /// add reserve address to colateral list
         collateralReserve.add(aaveReserveList[i].assetAddress);

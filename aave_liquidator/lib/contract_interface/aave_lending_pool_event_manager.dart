@@ -1,5 +1,4 @@
-import 'package:aave_liquidator/config.dart';
-import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
+import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_deposit_event.dart';
@@ -9,22 +8,22 @@ import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:web3dart/web3dart.dart';
 import 'package:aave_liquidator/helper/aave_event_parser.dart';
 
-final log = getLogger('AaveLendingPoolEventListeners');
+final log = getLogger('AaveLendingPoolEventManager');
 
 class AaveLendingPoolEventManager {
   AaveLendingPoolEventManager({
     required Web3Service web3,
-    required Config config,
+    // required Config config,
     // required MongodService mongod,
     required AaveContracts aaveContracts,
   }) {
     _web3service = web3;
-    _config = config;
+    // _config = config;
     _aaveContracts = aaveContracts;
     _eventParser = AaveEventParser(_aaveContracts);
   }
   late Web3Service _web3service;
-  late Config _config;
+  // late Config _config;
 
   late AaveContracts _aaveContracts;
   late AaveEventParser _eventParser;
@@ -59,7 +58,7 @@ class AaveLendingPoolEventManager {
       final _filterOptions = FilterOptions(
         fromBlock: BlockNum.exact(27713385),
         toBlock: BlockNum.exact(27713385),
-        address: _config.lendingPoolProxyContractAddress,
+        address: _aaveContracts.lendingPoolProxyAddress,
       );
 
       /// Query block for matching logs
@@ -78,12 +77,12 @@ class AaveLendingPoolEventManager {
     try {
       /// Create filter
       FilterOptions _filter = FilterOptions(
-        address: _config.lendingPoolProxyContractAddress,
+        address: _aaveContracts.lendingPoolProxyAddress,
         fromBlock:
             fromBlock != null ? BlockNum.exact(fromBlock) : BlockNum.current(),
         toBlock: toBlock != null ? BlockNum.exact(toBlock) : BlockNum.current(),
         topics: [
-          [_config.encodedBorrowEventTopic]
+          [_eventParser.encodedBorrowEventTopic]
         ],
       );
 
@@ -109,12 +108,12 @@ class AaveLendingPoolEventManager {
     try {
       /// Create filter.
       FilterOptions _filter = FilterOptions(
-        address: _config.lendingPoolProxyContractAddress,
+        address: _aaveContracts.lendingPoolProxyAddress,
         fromBlock:
             fromBlock != null ? BlockNum.exact(fromBlock) : BlockNum.current(),
         toBlock: toBlock != null ? BlockNum.exact(toBlock) : BlockNum.current(),
         topics: [
-          [_config.encodedDepositEventTopic]
+          [_eventParser.encodedDepositEventTopic]
         ],
       );
 
@@ -138,12 +137,12 @@ class AaveLendingPoolEventManager {
     try {
       /// Create filter.
       FilterOptions _filter = FilterOptions(
-        address: _config.lendingPoolProxyContractAddress,
+        address: _aaveContracts.lendingPoolProxyAddress,
         fromBlock:
             fromBlock != null ? BlockNum.exact(fromBlock) : BlockNum.current(),
         toBlock: toBlock != null ? BlockNum.exact(toBlock) : BlockNum.current(),
         topics: [
-          [_config.encodedRepayEventTopic]
+          [_eventParser.encodedRepayEventTopic]
         ],
       );
 
@@ -167,12 +166,12 @@ class AaveLendingPoolEventManager {
     try {
       /// Create filter
       FilterOptions _filter = FilterOptions(
-        address: _config.lendingPoolProxyContractAddress,
+        address: _aaveContracts.lendingPoolProxyAddress,
         fromBlock:
             fromBlock != null ? BlockNum.exact(fromBlock) : BlockNum.current(),
         toBlock: toBlock != null ? BlockNum.exact(toBlock) : BlockNum.current(),
         topics: [
-          [_config.encodedWithdrawEventTopic]
+          [_eventParser.encodedWithdrawEventTopic]
         ],
       );
 

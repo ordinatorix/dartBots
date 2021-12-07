@@ -1,11 +1,10 @@
 import 'dart:async';
 
-import 'package:aave_liquidator/config.dart';
+import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:mongo_dart/mongo_dart.dart';
-
 
 final log = getLogger('MongodService');
 
@@ -18,9 +17,9 @@ class MongodService {
   late Config _config;
   late Db _db;
   late DbCollection _userStore;
+  late DbCollection _reserveStore;
   final Completer<bool> isConnected = Completer<bool>();
 
-  late DbCollection _reserveStore;
   Future<bool> get isReady => isConnected.future;
 
   /// Connect to _db.
@@ -52,7 +51,7 @@ class MongodService {
   _setupCollections() async {
     log.i('_setupCollections');
     await isReady;
-    _reserveStore = _db.collection(_config.aaveReserveCollectionName);
+    _reserveStore = _db.collection(_config.aaveReserveCollection);
     _userStore = _db.collection(_config.aaveUserCollection);
   }
 
@@ -262,7 +261,7 @@ class MongodService {
     required BigInt newAssetPrice,
   }) async {
     try {
-      final reserveStore = _db.collection(_config.aaveReserveCollectionName);
+      final reserveStore = _db.collection(_config.aaveReserveCollection);
       await reserveStore.updateOne(
         where.eq('reserveAddress', assetAddress),
         modify.set('assetPrice', newAssetPrice),
@@ -275,7 +274,7 @@ class MongodService {
   /// Updates all data of a given asset reserve.
   updateAaveReserve(AaveReserveData reserveData) async {
     try {
-      final reserveStore = _db.collection(_config.aaveReserveCollectionName);
+      final reserveStore = _db.collection(_config.aaveReserveCollection);
       await reserveStore.replaceOne(
         where.eq('reserveAddress', reserveData.assetAddress),
         reserveData.toJson(),

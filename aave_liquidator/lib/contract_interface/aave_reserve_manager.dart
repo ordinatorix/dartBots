@@ -1,8 +1,9 @@
 import 'package:aave_liquidator/abi/aave_abi/aave_protocol_data_provider.g.dart';
-import 'package:aave_liquidator/config.dart';
+import 'package:aave_liquidator/configs/config.dart';
+import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/logger.dart';
 
-import 'package:aave_liquidator/contract_helpers/aave_contracts.dart';
+
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:web3dart/web3dart.dart';

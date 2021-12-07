@@ -1,18 +1,14 @@
 import 'dart:async';
 
-import 'package:aave_liquidator/config.dart';
+import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/logger.dart';
 
-import 'package:aave_liquidator/model/aave_withdraw_event.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:dotenv/dotenv.dart';
 import 'package:http/http.dart';
 
-import 'package:aave_liquidator/model/aave_borrow_event.dart';
-import 'package:aave_liquidator/model/aave_deposit_event.dart';
-import 'package:aave_liquidator/model/aave_repay_event.dart';
-
 import 'package:web3dart/web3dart.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
 
 final log = getLogger('Web3Service');
 
@@ -33,13 +29,7 @@ class Web3Service {
 
   late CredentialsWithKnownAddress credentials;
 
-  late List<AaveBorrowEvent> queriedBorrowEvent;
-  late List<AaveDepositEvent> queriedDepositEvent;
-  late List<AaveRepayEvent> queriedRepayEvent;
-  late List<AaveWithdrawEvent> queriedWithdrawEvent;
-  List<String> userFromEvents = [];
-  List<EthereumAddress> aaveReserveList = [];
-  final pare = Completer<bool>();
+  final Completer<bool> pare = Completer<bool>();
 
   _initWeb3Client() async {
     await _connectViaRpcApi();
@@ -54,12 +44,16 @@ class Web3Service {
 
   /// Connect to blockchain using address in localhost
   Future<void> _connectViaRpcApi() async {
-    log.i('connecting using Infura');
+    log.i('connecting using to blockchain');
     try {
-      web3Client = Web3Client(_config.mainnetApiUrl, _httpClient);
+      web3Client = Web3Client(_config.apiUrl, _httpClient, socketConnector: () {
+        return WebSocketChannel.connect(Uri.parse(_config.apiWssUri))
+            .cast<String>();
+      });
       chainId = await web3Client.getNetworkId();
       log.v('current chainID: $chainId');
       _isListenning = await web3Client.isListeningForNetwork();
+      await getCurrentBlock();
       log.v('web3Client is listening: $_isListenning');
     } catch (e) {
       log.e('error connecting to blockchain: $e');
@@ -69,7 +63,7 @@ class Web3Service {
   /// Connect wallet
   _getCredentials() {
     log.i('getting credentials');
-    credentials = EthPrivateKey.fromHex(env['WALLET_PRIVATE_KEY']!);
+    credentials = EthPrivateKey.fromHex(env['WALLET_PRIVATE_KEY_0']!);
     log.v('credential address: ${credentials.address}');
   }
 
