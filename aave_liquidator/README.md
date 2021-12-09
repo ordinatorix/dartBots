@@ -17,6 +17,8 @@ test> db.aaveReserve.countDocuments()
 test> db.aaveReserve.drop()
 test> exit()
 ```
+
+- make sure you have access to chain network.
 - run/debug app in vs code.
 
 
