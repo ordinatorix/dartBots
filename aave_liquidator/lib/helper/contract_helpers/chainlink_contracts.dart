@@ -303,7 +303,7 @@ class ChainlinkContracts {
     log.i('_setupPriceFeed');
 // TODO: loop for all known tokens
     try {
-      /// get aggregator contract address.
+      /// get aggregator contract address for DAI/ETH pair.
       final EthereumAddress daiEthAggregatorContractAddress =
           await feedRegistryContract.getFeed(token.daiTokenContractAddress,
               EthereumAddress.fromHex(_config.denominationEth));

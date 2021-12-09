@@ -161,7 +161,7 @@ void main() async {
     }
   }
 
-  // await _pollReserveData();
+  await _pollReserveData();
 
   /// Poll Aave for new users
   ///
@@ -196,22 +196,21 @@ void main() async {
     }
   }
 
-  // await _pollNewUsers();
-
-  final List<AaveUserAccountData> riskyUser = await _userManager
-      .getUserAccountData(
-          userList: ['0x3489198047510dc393f158d12a45c737e233c524']);
-  log.wtf('yes: ${riskyUser[0].healthFactor}');
-
-  // every 30 min,
-  // get assets price
+  await _pollNewUsers();
 
   /// For every asset available on aave.
   /// Listen for price changes.
   ///
   _oracle.priceListener();
 
-  // liquidate user.
+  final List<AaveUserAccountData> riskyUser = await _userManager
+      .getUserAccountData(
+          userList: ['0x3489198047510dc393f158d12a45c737e233c524']);
+  log.wtf('yes: ${riskyUser[0].healthFactor}');
+
+  /// liquidate user.
+  /// TODO: automate asset selection by calling the liquidator inside a  price listener.
+
   await _liquidatorContract.liquidateAaveUser(
     collateralAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
     debtAsset: '0x6b175474e89094c44da98b954eedeac495271d0f',
