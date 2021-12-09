@@ -28,6 +28,7 @@ class AaveContracts {
   late ContractEvent contractBorrowEvent;
   late ContractEvent contractRepayEvent;
   late ContractEvent contractLiquidationCallEvent;
+  late ContractFunction contractLiquidationCallFunction;
 
   late EthereumAddress lendingPoolProxyAddress;
   late EthereumAddress protocolDataProviderAdress;
@@ -71,5 +72,7 @@ class AaveContracts {
     contractRepayEvent = lendingPoolContract.self.event('Repay');
     contractLiquidationCallEvent =
         lendingPoolContract.self.event('LiquidationCall');
+    contractLiquidationCallFunction =
+        lendingPoolContract.self.function('liquidationCall');
   }
 }
