@@ -7,7 +7,7 @@ final String apiUrl =
 final String apiWssUri =
     'wss://eth-mainnet.alchemyapi.io/v2/${env['ALCHEMY_MAINNET_API_KEY']}';
 
-/// Aave Mainnet Contract addresses
+/// Aave Contract addresses
 ///
 final lendingPoolAddressProviderContractAddress =
     EthereumAddress.fromHex('0xB53C1a33016B2DC2fF3653530bfF1848a515c8c5'); //
