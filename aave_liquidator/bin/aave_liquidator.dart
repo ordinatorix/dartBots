@@ -3,6 +3,7 @@ import 'package:aave_liquidator/contract_interface/aave_lending_pool_event_manag
 import 'package:aave_liquidator/contract_interface/aave_reserve_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_user_manager.dart';
 import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
+import 'package:aave_liquidator/helper/contract_helpers/liquidator_contract.dart';
 import 'package:aave_liquidator/enums/deployed_networks.dart';
 import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
 import 'package:aave_liquidator/helper/contract_helpers/chainlink_contracts.dart';
@@ -10,6 +11,7 @@ import 'package:aave_liquidator/helper/network_prompt.dart';
 
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_borrow_event.dart';
+import 'package:aave_liquidator/model/aave_user_account_data.dart';
 
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
@@ -48,6 +50,10 @@ void main() async {
   /// setup chainlink contracts
   final ChainlinkContracts _chainlinkContracts =
       ChainlinkContracts(_web3, _config);
+
+  /// setup liquidator contract.
+  final LiquidatorContract _liquidatorContract =
+      LiquidatorContract(web3: _web3, aaveContracts: _aaveContracts);
 
   /// wait for chainlink contracts to be ready.
   await _chainlinkContracts.isReady;
@@ -117,7 +123,12 @@ void main() async {
     }
   }
 
-  await _pollNewUsers();
+  // await _pollNewUsers();
+
+  final List<AaveUserAccountData> riskyUser = await _userManager
+      .getUserAccountData(
+          userList: ['0x3489198047510dc393f158d12a45c737e233c524']);
+  log.wtf('yes: ${riskyUser[0].healthFactor}');
 
   // every 30 min,
   // get assets price
@@ -127,17 +138,15 @@ void main() async {
   ///
   _oracle.priceListener();
 
-  // var newData = await _oracle.getTokenUser(
-  //   tokenAddress: '0x2260fac5e5542a773aa44fbcfedf7c193bc2c599',
-  //   tokenPrice: BigInt.parse('9047136687690356000'),
-  // );
-  // List liquidatable = newData
-  //     .where((user) => BigInt.parse(user.genHf) < BigInt.from(10000))
-  //     .toList();
-
-  // log.w(liquidatable);
-
-  /// TODO: call samrt contract to liquidate.
+  // liquidate user.
+  await _liquidatorContract.liquidateAaveUser(
+    collateralAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+    debtAsset: '0x6b175474e89094c44da98b954eedeac495271d0f',
+    user: '0x3489198047510dc393f158d12a45c737e233c524',
+    // debtToCover: BigInt.parse('45722211231980037'),
+    debtToCover: BigInt.parse('213896121822239717418'),
+    useEthPath: false,
+  );
 
   /// Terminate all conections
   _web3.dispose();
