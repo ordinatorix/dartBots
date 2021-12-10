@@ -18,6 +18,7 @@ class Config {
   late EthereumAddress feedRegistryContractAddress;
   late String aaveUserCollection;
   late String aaveReserveCollection;
+  late Map<String, EthereumAddress> aggregatorAddress;
 
   _setupNetwork(DeployedNetwork network) {
     switch (network) {
@@ -64,6 +65,7 @@ class Config {
     feedRegistryContractAddress = kovan.feedRegistryContractAddress;
     aaveUserCollection = kovan.aaveUserCollection;
     aaveReserveCollection = kovan.aaveReserveCollection;
+    aggregatorAddress = kovan.aggregator;
   }
 
   _setupMainnet() {
@@ -88,6 +90,7 @@ class Config {
     feedRegistryContractAddress = local_net.feedRegistryContractAddress;
     aaveUserCollection = local_net.aaveUserCollection;
     aaveReserveCollection = local_net.aaveReserveCollection;
+    aggregatorAddress = local_net.aggregator;
   }
 
   // /// Token Symbol
