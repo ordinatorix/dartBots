@@ -64,7 +64,7 @@ class AaveLendingPoolEventManager {
       /// Query block for matching logs
       List<FilterEvent> logs =
           await _web3service.web3Client.getLogs(_filterOptions);
-      log.d('Data: ${logs[0].data} \n Topics: ${logs[0].topics}');
+      log.v('Data: ${logs[0].data} \n Topics: ${logs[0].topics}');
     } catch (e) {
       log.e('error querying events by contract: $e');
     }
@@ -162,7 +162,7 @@ class AaveLendingPoolEventManager {
   /// Query withdraw event.
   Future<List<AaveWithdrawEvent>> queryWithdrawEvent(
       {int? fromBlock, int? toBlock}) async {
-    log.d('querying repay event');
+    log.i('querying repay event');
     try {
       /// Create filter
       FilterOptions _filter = FilterOptions(
@@ -196,7 +196,7 @@ class AaveLendingPoolEventManager {
     log.i('listenning for borrow event');
 
     _aaveContracts.lendingPoolContract.borrowEvents().listen((_borrow) {
-      log.d('new borrow event: $_borrow');
+      log.v('new borrow event: $_borrow');
       _eventParser.parseEventToAaveBorrowEvent(borrow: _borrow);
     });
   }
@@ -208,7 +208,7 @@ class AaveLendingPoolEventManager {
     log.i('listenning for deposit event');
 
     _aaveContracts.lendingPoolContract.depositEvents().listen((_deposit) {
-      log.d('new deposit event: $_deposit');
+      log.v('new deposit event: $_deposit');
 
       _eventParser.parseEventToAaveDepositEvent(deposit: _deposit);
     });
@@ -221,7 +221,7 @@ class AaveLendingPoolEventManager {
     log.i('listenning for repay event');
 
     _aaveContracts.lendingPoolContract.repayEvents().listen((_repay) {
-      log.d('new repay event: $_repay');
+      log.v('new repay event: $_repay');
       _eventParser.parseEventToAaveRepayEvent(repay: _repay);
     });
   }
@@ -232,7 +232,7 @@ class AaveLendingPoolEventManager {
   listenForWithdrawEvent() {
     log.i('listenning for withdraw event');
     _aaveContracts.lendingPoolContract.withdrawEvents().listen((_withdraw) {
-      log.d('new withdraw event: $_withdraw');
+      log.v('new withdraw event: $_withdraw');
       _eventParser.parseEventToAaveWithdrawEvent(withdraw: _withdraw);
     });
   }
@@ -245,7 +245,7 @@ class AaveLendingPoolEventManager {
     _aaveContracts.lendingPoolContract
         .liquidationCallEvents()
         .listen((_liqCall) {
-      log.d('new liquidation call event: $_liqCall');
+      log.v('new liquidation call event: $_liqCall');
       // TODO: parse liquidation call event.
     });
   }

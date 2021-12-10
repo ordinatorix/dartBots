@@ -102,13 +102,12 @@ class AaveEventParser {
   /// Parse withdraw event.
   AaveWithdrawEvent parseEventToAaveWithdrawEvent(
       {Withdraw? withdraw, FilterEvent? filterEvent}) {
-    log.d('parsing withdraw event');
+    log.v('parsing withdraw event');
     late AaveWithdrawEvent parsedWithdrawEvent;
     if (filterEvent != null) {
       List _decodedResult = _aaveContracts.contractWithdrawEvent
           .decodeResults(filterEvent.topics!, filterEvent.data!);
 
-      log.d('decoded withdraw event: $_decodedResult');
       parsedWithdrawEvent = AaveWithdrawEvent(
         reserve: _decodedResult[0].toString(),
         userAddress: _decodedResult[1].toString(),
@@ -123,7 +122,7 @@ class AaveEventParser {
         amount: withdraw.amount,
       );
     }
-    log.d(parsedWithdrawEvent);
+    log.v(parsedWithdrawEvent);
     return parsedWithdrawEvent;
   }
 
