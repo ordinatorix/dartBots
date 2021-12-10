@@ -28,3 +28,16 @@ final String aaveUserCollection = 'kovanAaveUsers';
 
 /// Aave reserve collection name
 final String aaveReserveCollection = 'kovanAaveReserve';
+
+Map<String, EthereumAddress> aggregator = {
+  "DAI/ETH":
+      EthereumAddress.fromHex("0x22B58f1EbEDfCA50feF632bD73368b2FdA96D541"),
+  "USDC/ETH":
+      EthereumAddress.fromHex("0x64EaC61A2DFda2c3Fa04eED49AA33D021AeC8838"),
+  "USDT/ETH":
+      EthereumAddress.fromHex("0x0bF499444525a23E7Bb61997539725cA2e928138"),
+  "WBTC/ETH":
+      EthereumAddress.fromHex("0xF7904a295A029a3aBDFFB6F12755974a958C7C25"),
+  "ETH/USD":
+      EthereumAddress.fromHex("0x9326BFA02ADD2366b30bacB125260Af641031331"),
+};

@@ -23,3 +23,16 @@ final String aaveUserCollection = 'localNetAaveUsers';
 
 /// Aave reserve collection name
 final String aaveReserveCollection = 'localNetAaveReserve';
+
+Map<String, EthereumAddress> aggregator = {
+  "DAI/ETH":
+      EthereumAddress.fromHex("0x773616E4d11A78F511299002da57A0a94577F1f4"),
+  "USDC/ETH":
+      EthereumAddress.fromHex("0x986b5E1e1755e3C2440e960477f25201B0a8bbD4"),
+  "USDT/ETH":
+      EthereumAddress.fromHex("0xEe9F2375b4bdF6387aa8265dD4FB8F16512A1d46"),
+  "WBTC/ETH":
+      EthereumAddress.fromHex("0xdeb288F737066589598e9214E782fa5A8eD689e8"),
+  "ETH/USD":
+      EthereumAddress.fromHex("0xF7904a295A029a3aBDFFB6F12755974a958C7C25"),
+};
