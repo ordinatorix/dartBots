@@ -11,7 +11,6 @@ import 'package:aave_liquidator/helper/network_prompt.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
-import 'package:aave_liquidator/model/aave_user_account_data.dart';
 
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
@@ -22,14 +21,14 @@ import 'package:web3dart/web3dart.dart';
 final log = getLogger('main');
 void main() async {
   /// set debug level
-  Logger.level = Level.verbose;
+  Logger.level = Level.debug;
   log.v('Success, We\'re In!');
 
   /// Load env
   load();
 
   // int _userSelection = requireNetworkSelection();
-  int _userSelection = 0;
+  int _userSelection = 1;
   var _selectedNetwork = DeployedNetwork.values[_userSelection];
 
   print('running app using $_selectedNetwork');
@@ -39,24 +38,36 @@ void main() async {
 
   /// Connect to db.
   final MongodService _mongodService = MongodService(_config);
+  log.v('Waiting on db contract setup');
   await _mongodService.isReady;
 
   /// Connect to blockchain network via infura
   final Web3Service _web3 = Web3Service(_config, _mongodService);
+  log.v('Waiting on web3 setup');
   await _web3.isReady;
 
   /// Setup aave contracts
-  final AaveContracts _aaveContracts = AaveContracts(_web3, _config);
+  final AaveContracts _aaveContracts = AaveContracts(
+    _web3,
+    _config,
+  );
 
   /// setup chainlink contracts
-  final ChainlinkContracts _chainlinkContracts =
-      ChainlinkContracts(_web3, _config);
+  final ChainlinkContracts _chainlinkContracts = ChainlinkContracts(
+    _web3,
+    _config,
+  );
+  log.v('waiting on aaveContract setup');
+  await _aaveContracts.isReady;
 
   /// setup liquidator contract.
-  final LiquidatorContract _liquidatorContract =
-      LiquidatorContract(web3: _web3, aaveContracts: _aaveContracts);
+  final LiquidatorContract _liquidatorContract = LiquidatorContract(
+    web3: _web3,
+    aaveContracts: _aaveContracts,
+  );
 
   /// wait for chainlink contracts to be ready.
+  log.v('Waiting on chainlink contract setup');
   await _chainlinkContracts.isReady;
 
   /// setup price oracle.
@@ -64,6 +75,8 @@ void main() async {
     chainlinkContracts: _chainlinkContracts,
     config: _config,
     mongod: _mongodService,
+    liquidatorContract: _liquidatorContract,
+    network: _selectedNetwork,
   );
 
   final AaveReserveManager _reserveManager = AaveReserveManager(
@@ -174,17 +187,15 @@ void main() async {
       final _currentBlock = await _web3.getCurrentBlock();
 
       List<AaveBorrowEvent> _borrowEvents = [];
-      final startingBlock = 12341000;
+      final startingBlock = _currentBlock - 15000; //12341000;
       final increment = 2000;
       for (var i = startingBlock; i <= _currentBlock; i += increment) {
-        log.d('segment: $i');
         final _fromBlock = i;
         final _toBlock = i + increment;
-        print('from:$_fromBlock');
-        print('to:$_toBlock');
+
         final _borrowEventsSegment = await _lendingPoolEventManager
             .queryBorrowEvent(fromBlock: _fromBlock, toBlock: _toBlock);
-        log.d('_borrowEvents found :${_borrowEventsSegment.length}');
+        log.v('_borrowEvents found :${_borrowEventsSegment.length}');
         _borrowEvents.addAll(_borrowEventsSegment);
       }
       final _userList = _lendingPoolEventManager
@@ -201,26 +212,10 @@ void main() async {
   /// For every asset available on aave.
   /// Listen for price changes.
   ///
-  _oracle.priceListener();
-
-  final List<AaveUserAccountData> riskyUser = await _userManager
-      .getUserAccountData(
-          userList: ['0x3489198047510dc393f158d12a45c737e233c524']);
-  log.wtf('yes: ${riskyUser[0].healthFactor}');
-
-  /// liquidate user.
-  /// TODO: automate asset selection by calling the liquidator inside a  price listener.
-
-  await _liquidatorContract.liquidateAaveUser(
-    collateralAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-    debtAsset: '0x6b175474e89094c44da98b954eedeac495271d0f',
-    user: '0x3489198047510dc393f158d12a45c737e233c524',
-    // debtToCover: BigInt.parse('45722211231980037'),
-    debtToCover: BigInt.parse('213896121822239717418'),
-    useEthPath: false,
-  );
-
+  await _oracle.priceListener();
+//TODO: proper shutdown.
   /// Terminate all conections
   _web3.dispose();
-  _mongodService.closeDb();
+
+  // _mongodService.closeDb();
 }

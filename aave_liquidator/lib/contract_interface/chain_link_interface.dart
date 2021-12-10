@@ -1,13 +1,15 @@
 import 'dart:async';
 
 import 'package:aave_liquidator/configs/config.dart';
+import 'package:aave_liquidator/enums/deployed_networks.dart';
 import 'package:aave_liquidator/helper/contract_helpers/chainlink_contracts.dart';
+import 'package:aave_liquidator/helper/contract_helpers/liquidator_contract.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:web3dart/web3dart.dart';
-import 'package:aave_liquidator/token_address.dart' as token;
+import 'package:aave_liquidator/helper/addresses/token_address.dart' as token;
 
 final log = getLogger('ChainLinkPriceOracle');
 
@@ -19,16 +21,22 @@ class ChainLinkPriceOracle {
   late Config _config;
   late MongodService _mongodService;
   late ChainlinkContracts _chainlinkContracts;
+  late LiquidatorContract _liquidatorContract;
+  late DeployedNetwork _network;
 
   ChainLinkPriceOracle({
     required Config config,
     required MongodService mongod,
     required ChainlinkContracts chainlinkContracts,
+    required LiquidatorContract liquidatorContract,
+    required DeployedNetwork network,
   }) {
     _config = config;
     _mongodService = mongod;
     _chainlinkContracts = chainlinkContracts;
-    // getEthPrice();
+    _liquidatorContract = liquidatorContract;
+    _network = network;
+    getEthPrice();
     getDaiPrice();
   }
 
@@ -37,74 +45,114 @@ class ChainLinkPriceOracle {
     log.i('price of DAI in ETH: $daiPrice');
   }
 
-  // getEthPrice() async {
-  //   var ethPrice =
-  //       await _chainlinkContracts.ethUsdOracleContract.latestAnswer();
-  //   log.i('ethPrice: $ethPrice');
-  // }
-
-  priceListener() {
-    log.i('priceListener');
-
-    _listenForEthPriceUpdate();
-    _listenForDaiPriceUpdate();
+  getEthPrice() async {
+    var ethPrice = await _chainlinkContracts.ethUsdAggregator.latestAnswer();
+    log.i('ethPrice: $ethPrice');
   }
 
-  /// listen for eth price.
+  priceListener() async {
+    log.i('priceListener');
+
+     _listenForEthPriceUpdate();
+    await _listenForDaiPriceUpdate();
+  }
+
+  /// listen for eth price ∆.
   _listenForEthPriceUpdate() {
     //TODO: price listeners
     log.i('listenForEthPriceUpdate');
   }
 
-  /// Listen for DAI price.
-  _listenForDaiPriceUpdate() {
+  /// Listen for DAI price ∆.
+  _listenForDaiPriceUpdate() async {
     log.i('listenForDaiPriceUpdate');
+    String _daiTokenAddress =
+        '0xff795577d9ac8bd7d90ee22b6c1703490b6512fd'; // token.daiTokenContractAddress.toString();
+
+    /// get previous asset reserve data from db.
+    List<AaveReserveData> _reserveList =
+        await _mongodService.getReservesFromDb();
+
+    /// get previous price of asset.
+    BigInt _oldTokenPrice = _reserveList
+        .firstWhere(
+          (reserve) => reserve.assetAddress == _daiTokenAddress,
+        )
+        .assetPrice;
+
     _chainlinkContracts.daiEthAggregator
         .answerUpdatedEvents()
         .listen((newDaiPrice) async {
       log.w('new price of dai in eth $newDaiPrice');
-      String _daiTokenAddress = token.daiTokenContractAddress.toString();
-      List<AaveUserAccountData> liquidatableUsers = await getTokenUser(
+      log.w('old price of dai in eth $_oldTokenPrice');
+      // String _daiTokenAddress = token.daiTokenContractAddress.toString();
+      List<AaveUserAccountData> tokenUsers = await _getTokenUser(
         tokenAddress: _daiTokenAddress,
         tokenPrice: newDaiPrice.current,
+        oldTokenPrice: _oldTokenPrice,
+        reserveList: _reserveList,
       );
 
-      ///TODO: update price in db
-
-      /// TODO: liquidate users
-      ///
-      List liquidatedUsers = liquidatableUsers
+      List<AaveUserAccountData> liquidatableUserList = tokenUsers
           .where((user) =>
               BigInt.parse(user.generatedHealthFactor) < BigInt.from(10000))
           .toList();
 
-      log.w('liquidatedUsers: $liquidatedUsers');
+      log.w('liquidatedUsers: $liquidatableUserList');
+
+      if (_oldTokenPrice < newDaiPrice.current) {
+        // price increased; liquidate user with token as debt.
+        log.w('Should liquidat users using Token as debt');
+        // for (AaveUserAccountData liquidatableUser in liquidatableUserList) {
+        //   await _liquidatorContract.liquidateAaveUser(
+        //     collateralAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+        //     debtAsset: _daiTokenAddress,
+        //     user: liquidatableUser.userAddress,
+        //     debtToCover: liquidatableUser.variableDebtReserve[_daiTokenAddress],
+        //     useEthPath: false,
+        //   );
+        // }
+      } else {
+        // price decrease; liquidate user with token as collateral.
+        log.w('Should liquidat users using Token as collateral');
+        // for (AaveUserAccountData liquidatableUser in liquidatableUserList) {
+        //   await _liquidatorContract.liquidateAaveUser(
+        //     collateralAsset: _daiTokenAddress,
+        //     debtAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+        //     user: liquidatableUser.userAddress,
+        //     debtToCover: liquidatableUser.variableDebtReserve[
+        //         '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'],
+        //     useEthPath: false,
+        //   );
+        // }
+      }
+
+      ///TODO: update price in db
+      ///
+      _oldTokenPrice = newDaiPrice.current;
     });
   }
 
-  Future<List<AaveUserAccountData>> getTokenUser({
+  /// Get list of users using specific Token.
+  ///
+  /// Returns list of user account holding token as either debt or collateral.
+  Future<List<AaveUserAccountData>> _getTokenUser({
     required String tokenAddress,
     required BigInt tokenPrice,
+    required BigInt oldTokenPrice,
+    required List<AaveReserveData> reserveList,
   }) async {
+    log.i(
+        'getTokenUser | tokenAddress: $tokenAddress; tokenPrice: $tokenPrice');
     try {
-      /// get previous asset reserve data from db.
-      List<AaveReserveData> reserveList =
-          await _mongodService.getReservesFromDb();
-
-      /// get its previous price
-      BigInt oldTokenPrice = reserveList
-          .firstWhere(
-            (reserve) => reserve.assetAddress == tokenAddress,
-          )
-          .assetPrice;
       late List<AaveUserAccountData> _userAccountDataList;
 
-      /// if price increase,
+      /// get users depending on price change direction.
       if (oldTokenPrice < tokenPrice) {
         /// get users with current token as debt
         _userAccountDataList = await _mongodService.getDebtUsers(tokenAddress);
       } else {
-        /// if price decrease get users with dai as collateral
+        /// get users with dai as collateral.
         _userAccountDataList =
             await _mongodService.getCollateralUsers(tokenAddress);
       }
@@ -114,7 +162,7 @@ class ChainLinkPriceOracle {
       /// returns list of [AaveUserAccountData] with the calculated HF
       List<AaveUserAccountData> newData = _userAccountDataList
           .map(
-            (userAcount) => calculateUsersHealthFactor(
+            (userAcount) => _calculateUsersHealthFactor(
                 userAccountData: userAcount,
                 reserveDataList: reserveList,
                 currentTokenAddress: tokenAddress,
@@ -124,12 +172,13 @@ class ChainLinkPriceOracle {
 
       return newData;
     } catch (e) {
-      log.e('error getting liquidatable users: $e');
-      throw 'error getting liquidatable users';
+      log.e('error getting token users: $e');
+      throw 'error getting token users';
     }
   }
 
-  AaveUserAccountData calculateUsersHealthFactor({
+  /// Calculate user health factor using new price.
+  AaveUserAccountData _calculateUsersHealthFactor({
     required AaveUserAccountData userAccountData,
     required List<AaveReserveData> reserveDataList,
     required String currentTokenAddress,
@@ -215,17 +264,7 @@ class ChainLinkPriceOracle {
     return calculatedUserData;
   }
 
-  /// Calculate percent change in price from previous aave oracle price.
-  getPercentChange({
-    required BigInt currentPrice,
-    required BigInt previousPrice,
-  }) {
-    log.i(
-        'getPercentChange | currentPrice $currentPrice,previousPrice: $previousPrice');
-  }
-
-  /// query contract for lastest price of asset
-
+  /// Query contract for lastest price of asset in list.
   Future<List<BigInt>> getAllAssetsPrice(
       List<EthereumAddress> assetAddressList) async {
     log.i('getAllAssetsPrice');
@@ -233,15 +272,19 @@ class ChainLinkPriceOracle {
       List<BigInt> assetPriceList = [];
 
       for (EthereumAddress address in assetAddressList) {
-        final price = await _chainlinkContracts.feedRegistryContract
-            .latestAnswer(
-                address, EthereumAddress.fromHex(_config.denominationEth))
-            .catchError((onError) {
-          log.e('not found: $address');
-          return Future.value(BigInt.from(-1));
-        });
-        log.v('price data: $price');
-        assetPriceList.add(price);
+        if (_network.index == 2) {
+          final price = await _chainlinkContracts.feedRegistryContract
+              .latestAnswer(
+                  address, EthereumAddress.fromHex(_config.denominationEth))
+              .catchError((onError) {
+            log.e('not found: $address');
+            return Future.value(BigInt.from(-1));
+          });
+          log.v('price data: $price');
+          assetPriceList.add(price);
+        } else {
+          assetPriceList.add(BigInt.from(-1));
+        }
       }
 
       return assetPriceList;
@@ -250,9 +293,4 @@ class ChainLinkPriceOracle {
       throw 'no price from oracle';
     }
   }
-
-  // /// convert asset price to ETH
-  // double convertToEth(double assetPrice) {
-  //   return 10.0;
-  // }
 }

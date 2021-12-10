@@ -74,7 +74,7 @@ class AaveUserManager {
 
       /// Bulk update db.
       await _store.bulkUpdateUsers(_aaveUserList);
-      log.v('Found ${_aaveUserList.length} users at risk of liquidation.');
+      log.d('Found ${_aaveUserList.length} users at risk of liquidation.');
       return _aaveUserList;
     } catch (e) {
       log.e('error getting user account data: $e');
