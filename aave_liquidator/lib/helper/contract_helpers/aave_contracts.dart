@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool.g.dart';
 import 'package:aave_liquidator/abi/aave_abi/aave_lending_pool_address_provider.g.dart';
 import 'package:aave_liquidator/abi/aave_abi/aave_price_oracle.g.dart';
@@ -15,6 +17,10 @@ class AaveContracts {
     _config = config;
     _setupAddressProviderContract();
   }
+
+  final pare = Completer<bool>();
+  Future<bool> get isReady => pare.future;
+  
   late Config _config;
   late Web3Service _web3service;
   late Aave_lending_pool_address_provider aaveAddressProviderContract;
@@ -46,6 +52,7 @@ class AaveContracts {
         .protocolDataProviderContractAddress; // await aaveAddressProviderContract.getAddress(0x1);
     priceOracleAddress = await aaveAddressProviderContract.getPriceOracle();
     _setupContracts();
+    pare.complete(true);
   }
 
   _setupContracts() {
