@@ -131,7 +131,7 @@ class MongodService {
         }
       }
       var ret = await bulk.executeBulk();
-      log.d('bulk returned: $ret');
+      log.v('bulk returned: $ret');
     } catch (e) {
       log.e('error bulk updating users: $e');
     }
@@ -146,8 +146,6 @@ class MongodService {
         .find(where.gt('collateralReserve.$tokenAddress', '0'))
         .map((event) => _parseUserAccountData(event))
         .toList();
-
-    log.d('collateral users: $users');
 
     return users;
   }
@@ -173,7 +171,6 @@ class MongodService {
         })
         .map((event) => _parseUserAccountData(event))
         .toList();
-    log.d('debt users: $users');
 
     return users;
   }
