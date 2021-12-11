@@ -32,6 +32,6 @@ final Map<String, EthereumAddress> aggregator = {
       EthereumAddress.fromHex("0xEe9F2375b4bdF6387aa8265dD4FB8F16512A1d46"),
   "WBTC/ETH":
       EthereumAddress.fromHex("0xdeb288F737066589598e9214E782fa5A8eD689e8"),
-  "ETH/USD":
+  "WETH/USD":
       EthereumAddress.fromHex("0xF7904a295A029a3aBDFFB6F12755974a958C7C25"),
 };

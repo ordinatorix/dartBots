@@ -19,15 +19,15 @@ final lendingPoolAddressProviderContractAddress =
 final protocolDataProviderContractAddress =
     EthereumAddress.fromHex('0x3c73A5E5785cAC854D468F727c606C07488a29D6');
 
-/// Chainlink feed registry
-final feedRegistryContractAddress =
-    EthereumAddress.fromHex('0xAa7F6f7f507457a1EE157fE97F6c7DB2BEec5cD0');
-
 /// Aave users collection name.
 final String aaveUserCollection = 'kovanAaveUsers';
 
 /// Aave reserve collection name
 final String aaveReserveCollection = 'kovanAaveReserve';
+
+/// Chainlink contract addresses
+final feedRegistryContractAddress =
+    EthereumAddress.fromHex('0xAa7F6f7f507457a1EE157fE97F6c7DB2BEec5cD0');
 
 Map<String, EthereumAddress> aggregator = {
   "DAI/ETH":
@@ -38,6 +38,6 @@ Map<String, EthereumAddress> aggregator = {
       EthereumAddress.fromHex("0x0bF499444525a23E7Bb61997539725cA2e928138"),
   "WBTC/ETH":
       EthereumAddress.fromHex("0xF7904a295A029a3aBDFFB6F12755974a958C7C25"),
-  "ETH/USD":
+  "WETH/USD":
       EthereumAddress.fromHex("0x9326BFA02ADD2366b30bacB125260Af641031331"),
 };
