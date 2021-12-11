@@ -98,43 +98,47 @@ class AaveUserManager {
         stableDebt: {},
         variableDebt: {},
       );
+      if (_userReserves['collateral'] != null) {
+        for (final collateral in _userReserves['collateral']!) {
+          //TODO: make sure value is not null
+          GetUserReserveData userReserveData = await _aaveContracts
+              .protocolDataProviderContract
+              .getUserReserveData(
+            EthereumAddress.fromHex(collateral),
+            userAddress,
+          );
 
-      for (final collateral in _userReserves['collateral']!) {
-        GetUserReserveData userReserveData = await _aaveContracts
-            .protocolDataProviderContract
-            .getUserReserveData(
-          EthereumAddress.fromHex(collateral),
-          userAddress,
-        );
-
-        /// Get user collateral.
-        _aaveUserReserveData.collateral.update(
-          collateral,
-          (value) => userReserveData.currentATokenBalance.toString(),
-          ifAbsent: () => userReserveData.currentATokenBalance.toString(),
-        );
+          /// Get user collateral.
+          _aaveUserReserveData.collateral.update(
+            collateral,
+            (value) => userReserveData.currentATokenBalance.toString(),
+            ifAbsent: () => userReserveData.currentATokenBalance.toString(),
+          );
+        }
       }
-      for (final debt in _userReserves['debt']!) {
-        GetUserReserveData userReserveData = await _aaveContracts
-            .protocolDataProviderContract
-            .getUserReserveData(
-          EthereumAddress.fromHex(debt),
-          userAddress,
-        );
+      if (_userReserves['debt'] != null) {
+        for (final debt in _userReserves['debt']!) {
+          GetUserReserveData userReserveData = await _aaveContracts
+              .protocolDataProviderContract
+              .getUserReserveData(
+            EthereumAddress.fromHex(debt),
+            userAddress,
+          );
 
-        /// Get user variable debt.
-        _aaveUserReserveData.variableDebt.update(
-          debt,
-          (value) => userReserveData.currentVariableDebt.toString(),
-          ifAbsent: () => userReserveData.currentVariableDebt.toString(),
-        );
+          /// Get user variable debt.
+          _aaveUserReserveData.variableDebt.update(
+            debt,
+            (value) => userReserveData.currentVariableDebt.toString(),
+            ifAbsent: () => userReserveData.currentVariableDebt.toString(),
+          );
 
-        /// Get user stable debt.
-        _aaveUserReserveData.stableDebt.update(
-          debt,
-          (value) => userReserveData.currentStableDebt.toString(),
-          ifAbsent: () => userReserveData.currentStableDebt.toString(),
-        );
+          /// Get user stable debt.
+          _aaveUserReserveData.stableDebt.update(
+            debt,
+            (value) => userReserveData.currentStableDebt.toString(),
+            ifAbsent: () => userReserveData.currentStableDebt.toString(),
+          );
+        }
       }
 
       return _aaveUserReserveData;

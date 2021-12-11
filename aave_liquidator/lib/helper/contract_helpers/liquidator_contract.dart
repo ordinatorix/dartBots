@@ -23,11 +23,16 @@ class LiquidatorContract {
   late Liquidator liquidator;
 
   _setupContract() {
-    liquidator = Liquidator(
-      address: EthereumAddress.fromHex(env['LIQUIDATOR_ADDRESS']!),
-      client: _web3service.web3Client,
-      chainId: _web3service.chainId,
-    );
+    if (env['LIQUIDATOR_ADDRESS'] != null) {
+      liquidator = Liquidator(
+        address: EthereumAddress.fromHex(env['LIQUIDATOR_ADDRESS']!),
+        client: _web3service.web3Client,
+        chainId: _web3service.chainId,
+      );
+    } else {
+      log.e('liquidator address not found. This behavior is unexpected');
+      throw 'liquidator address not found';
+    }
   }
 
   liquidateAaveUser({
