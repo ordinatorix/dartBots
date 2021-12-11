@@ -319,9 +319,7 @@ class ChainLinkPriceOracle {
 
       /// use the updated price on the asset that triggered a price change.
       if (collateralAddress == currentTokenAddress) {
-        log.d('collateral price for $collateralAddress: $currentPrice');
-        log.d(
-            'collateral amount for $collateralAddress: $factoredCollateralAmount;');
+       
 
         BigInt tokenVal = factoredCollateralAmount * currentPrice;
 
