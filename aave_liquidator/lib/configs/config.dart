@@ -96,6 +96,8 @@ class Config {
   // /// Token Symbol
   final String ethToken = 'ETH';
   final String denominationEth = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+  final String denominationBtc = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
+
   final String denominationUSD = '0x0000000000000000000000000000000000000348';
 
   /// minimum health factor to take interest in. value is in wei

@@ -12,19 +12,18 @@ final lendingPoolAddressProviderContractAddress =
 final protocolDataProviderContractAddress =
     EthereumAddress.fromHex('0x057835Ad21a177dbdd3090bB1CAE03EaCF78Fc6d'); //
 
-/// Chainlink Mainnet contract addresses
-///
-
-final feedRegistryContractAddress =
-    EthereumAddress.fromHex('0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf');
-
 /// Aave users collection name.
 final String aaveUserCollection = 'localNetAaveUsers';
 
 /// Aave reserve collection name
 final String aaveReserveCollection = 'localNetAaveReserve';
 
-Map<String, EthereumAddress> aggregator = {
+/// ChainLink feed registry address.
+final feedRegistryContractAddress =
+    EthereumAddress.fromHex('0x47Fb2585D2C56Fe188D0E6ec628a38b74fCeeeDf');
+
+/// Chainlink aggregator proxy address.
+final Map<String, EthereumAddress> aggregator = {
   "DAI/ETH":
       EthereumAddress.fromHex("0x773616E4d11A78F511299002da57A0a94577F1f4"),
   "USDC/ETH":

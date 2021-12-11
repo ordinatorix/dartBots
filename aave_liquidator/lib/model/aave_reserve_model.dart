@@ -23,7 +23,7 @@ class AaveReserveData {
 
   @override
   String toString() {
-    return 'symbol: $assetSymbol, address: $assetAddress, price: $aaveAssetPrice';
+    return 'symbol: $assetSymbol, address: $assetAddress, assetPrice: $assetPrice, aaveAssetPrice: $aaveAssetPrice';
   }
 }
 
