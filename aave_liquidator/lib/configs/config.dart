@@ -18,6 +18,7 @@ class Config {
   late EthereumAddress feedRegistryContractAddress;
   late String aaveUserCollection;
   late String aaveReserveCollection;
+  late Map<String, EthereumAddress> aggregatorAddress;
 
   _setupNetwork(DeployedNetwork network) {
     switch (network) {
@@ -64,6 +65,7 @@ class Config {
     feedRegistryContractAddress = kovan.feedRegistryContractAddress;
     aaveUserCollection = kovan.aaveUserCollection;
     aaveReserveCollection = kovan.aaveReserveCollection;
+    aggregatorAddress = kovan.aggregator;
   }
 
   _setupMainnet() {
@@ -88,11 +90,14 @@ class Config {
     feedRegistryContractAddress = local_net.feedRegistryContractAddress;
     aaveUserCollection = local_net.aaveUserCollection;
     aaveReserveCollection = local_net.aaveReserveCollection;
+    aggregatorAddress = local_net.aggregator;
   }
 
   // /// Token Symbol
   final String ethToken = 'ETH';
   final String denominationEth = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
+  final String denominationBtc = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
+
   final String denominationUSD = '0x0000000000000000000000000000000000000348';
 
   /// minimum health factor to take interest in. value is in wei

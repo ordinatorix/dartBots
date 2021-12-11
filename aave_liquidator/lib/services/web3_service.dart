@@ -63,8 +63,13 @@ class Web3Service {
   /// Connect wallet
   _getCredentials() {
     log.i('getting credentials');
-    credentials = EthPrivateKey.fromHex(env['WALLET_PRIVATE_KEY_0']!);
-    log.v('credential address: ${credentials.address}');
+    if (env['WALLET_PRIVATE_KEY_0'] != null) {
+      credentials = EthPrivateKey.fromHex(env['WALLET_PRIVATE_KEY_0']!);
+      log.v('credential address: ${credentials.address}');
+    } else {
+      log.w('private key not found. This behavior is unexpected');
+      throw 'private key not found';
+    }
   }
 
   /// Get current wallet balance
