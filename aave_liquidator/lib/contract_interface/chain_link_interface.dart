@@ -207,7 +207,7 @@ class ChainLinkPriceOracle {
     if (lastPrice < newPrice) {
       log.v('price increased');
       // price increased; liquidate user with token as debt.
-      log.w('Should liquidate users using Token as debt');
+      log.w('Should liquidate users using ${tokenData.assetSymbol} as debt');
       // for (AaveUserAccountData liquidatableUser in liquidatableUserList) {
       //   await _liquidatorContract.liquidateAaveUser(
       //     collateralAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
@@ -220,7 +220,8 @@ class ChainLinkPriceOracle {
     } else {
       log.v('price decreased');
       // price decrease; liquidate user with token as collateral.
-      log.w('Should liquidate users using Token as collateral');
+      log.w(
+          'Should liquidate users using ${tokenData.assetSymbol} as collateral');
       // for (AaveUserAccountData liquidatableUser in liquidatableUserList) {
       //   await _liquidatorContract.liquidateAaveUser(
       //     collateralAsset: _daiTokenAddress,
@@ -319,8 +320,6 @@ class ChainLinkPriceOracle {
 
       /// use the updated price on the asset that triggered a price change.
       if (collateralAddress == currentTokenAddress) {
-       
-
         BigInt tokenVal = factoredCollateralAmount * currentPrice;
 
         calculatedCollateralETH = calculatedCollateralETH + tokenVal;
