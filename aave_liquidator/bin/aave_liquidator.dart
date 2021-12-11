@@ -6,7 +6,6 @@ import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
 import 'package:aave_liquidator/helper/contract_helpers/liquidator_contract.dart';
 import 'package:aave_liquidator/enums/deployed_networks.dart';
 import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
-import 'package:aave_liquidator/helper/contract_helpers/chainlink_contracts.dart';
 import 'package:aave_liquidator/helper/network_prompt.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_borrow_event.dart';
@@ -51,12 +50,6 @@ void main() async {
     _web3,
     _config,
   );
-
-  /// setup chainlink contracts
-  final ChainlinkContracts _chainlinkContracts = ChainlinkContracts(
-    _web3,
-    _config,
-  );
   log.v('waiting on aaveContract setup');
   await _aaveContracts.isReady;
 
@@ -66,13 +59,9 @@ void main() async {
     aaveContracts: _aaveContracts,
   );
 
-  /// wait for chainlink contracts to be ready.
-  log.v('Waiting on chainlink contract setup');
-  await _chainlinkContracts.isReady;
-
   /// setup price oracle.
   final ChainLinkPriceOracle _oracle = ChainLinkPriceOracle(
-    chainlinkContracts: _chainlinkContracts,
+    web3: _web3,
     config: _config,
     mongod: _mongodService,
     liquidatorContract: _liquidatorContract,
@@ -80,7 +69,6 @@ void main() async {
   );
 
   final AaveReserveManager _reserveManager = AaveReserveManager(
-    config: _config,
     mongod: _mongodService,
     aaveContracts: _aaveContracts,
   );

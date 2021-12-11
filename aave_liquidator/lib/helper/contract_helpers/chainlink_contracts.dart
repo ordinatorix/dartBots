@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:aave_liquidator/abi/chainlink_abi/aggregator_abi/chainlink_aggregator_proxy.g.dart';
 import 'package:aave_liquidator/abi/chainlink_abi/aggregator_abi/chainlink_token_usd_price_aggregator.g.dart';
+import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
+import 'package:aave_liquidator/model/aave_reserve_model.dart';
 
 import 'package:web3dart/web3dart.dart';
 
@@ -9,11 +11,10 @@ import 'package:aave_liquidator/abi/chainlink_abi/chainlink_feed_registry.g.dart
 import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
-import 'package:aave_liquidator/helper/addresses/token_address.dart' as token;
 
 final log = getLogger('ChainlinkContracts');
 
-/// sets up the chainlink contracts
+/// Sets up the chainlink contracts
 ///
 class ChainlinkContracts {
   late Web3Service _web3service;
@@ -28,30 +29,16 @@ class ChainlinkContracts {
 
     _setupContracts();
   }
+  late ChainLinkPriceOracle priceOracleInterface;
   final pare = Completer<bool>();
   Future<bool> get isReady => pare.future;
-  // TODO: auto fetch agregator addressand create contract on the fly
 
-  late Chainlink_aggregator_proxy daiEthOracleProxyContract;
-  late Chainlink_aggregator_proxy usdcEthOracleProxyContract;
-  late Chainlink_aggregator_proxy usdtEthOracleProxyContract;
-  late Chainlink_aggregator_proxy wbtcEthOracleProxyContract;
-  late Chainlink_aggregator_proxy wethEthOracleProxyContract;
-  late Chainlink_aggregator_proxy ethUsdOracleProxyContract;
-  // late Chainlink_agregator_proxy avaxEthOracleProxyContract;
-  // late Chainlink_agregator_proxy maticEthOracleProxyContract;
+  late Chainlink_aggregator_proxy tokenAggregatorProxyContract;
 
   late Chainlink_feed_registry feedRegistryContract;
 
-  late Chainlink_token_eth_price_aggregator daiEthAggregator;
-  late Chainlink_token_eth_price_aggregator usdcEthAggregator;
-  late Chainlink_token_eth_price_aggregator usdtEthAggregator;
-  late Chainlink_token_eth_price_aggregator wbtcEthAggregator;
-  late Chainlink_token_eth_price_aggregator maticEthAggregator;
-  late Chainlink_token_eth_price_aggregator avaxEthAggregator;
-  late Chainlink_token_usd_price_aggregator ethUsdAggregator;
-
-  // late ContractEvent daiEthAnswerUpdatedEvent;
+  late Chainlink_token_eth_price_aggregator tokenEthAggregator;
+  late Chainlink_token_usd_price_aggregator tokenUsdAggregator;
 
   _setupContracts() async {
     log.i('_setupContracts');
@@ -64,142 +51,116 @@ class ChainlinkContracts {
           client: _web3service.web3Client,
           chainId: _web3service.chainId,
         );
-
-        await _setupPriceFeed();
       } else {
-        log.d('setting up kovan price aggregators proxy');
-
-        /// setup DAI/ETH price oracle contract
-        daiEthOracleProxyContract = Chainlink_aggregator_proxy(
-          address: _config.aggregatorAddress["DAI/ETH"]!,
-          client: _web3service.web3Client,
-          chainId: _web3service.chainId,
-        );
-
-        /// setup USDT/ETH price oracle contract
-        usdtEthOracleProxyContract = Chainlink_aggregator_proxy(
-          address: _config.aggregatorAddress["USDT/ETH"]!,
-          client: _web3service.web3Client,
-          chainId: _web3service.chainId,
-        );
-
-        /// setup WBTC/ETH price oracle contract
-        wbtcEthOracleProxyContract = Chainlink_aggregator_proxy(
-          address: _config.aggregatorAddress["WBTC/ETH"]!,
-          client: _web3service.web3Client,
-          chainId: _web3service.chainId,
-        );
-
-        /// setup USDC/ETH price oracle contract
-        usdcEthOracleProxyContract = Chainlink_aggregator_proxy(
-          address: _config.aggregatorAddress["USDC/ETH"]!,
-          client: _web3service.web3Client,
-          chainId: _web3service.chainId,
-        );
-
-        /// setup ETH/USD price oracle contract
-        ethUsdOracleProxyContract = Chainlink_aggregator_proxy(
-          address: _config.aggregatorAddress["ETH/USD"]!,
-          client: _web3service.web3Client,
-          chainId: _web3service.chainId,
-        );
-
-        // /// setup AVAX/ETH price oracle contract
-        // avaxEthOracleProxyContract = Chainlink_aggregator_proxy(
-        //   address: _config.avaxEthOracleContractAddress,
-        //   client: _web3service.web3Client,
-        //   chainId: _web3service.chainId,
-        // );
-
-        // /// setup MATIC/ETH price oracle contract
-        // maticEthOracleProxyContract = Chainlink_aggregator_proxy(
-        //   address: _config.maticEthOracleContractAddress,
-        //   client: _web3service.web3Client,
-        //   chainId: _web3service.chainId,
-        // );
-        await _setupAggregretors();
-        pare.complete(true);
+        log.d('setting up price aggregator proxys');
       }
+      pare.complete(true);
     } catch (e) {
       log.e('error setting up feed registry: $e');
     }
   }
 
-  _setupAggregretors() async {
-    log.i('_setupAggregretors');
-
-    /// setup DAI/ETH price oracle contract
-    daiEthAggregator = Chainlink_token_eth_price_aggregator(
-      address: await daiEthOracleProxyContract.aggregator(),
+  /// setup token/ETH aggregator using aggregator contract address.
+  Chainlink_token_eth_price_aggregator _setupAggregator(
+      {required EthereumAddress aggregatorAddress}) {
+    /// setup token/ETH price oracle contract
+    return tokenEthAggregator = Chainlink_token_eth_price_aggregator(
+      address: aggregatorAddress,
       client: _web3service.web3Client,
       chainId: _web3service.chainId,
     );
-
-    /// setup USDT/ETH price oracle contract
-    usdtEthAggregator = Chainlink_token_eth_price_aggregator(
-      address: await usdtEthOracleProxyContract.aggregator(),
-      client: _web3service.web3Client,
-      chainId: _web3service.chainId,
-    );
-
-    /// setup WBTC/ETH price oracle contract
-    wbtcEthAggregator = Chainlink_token_eth_price_aggregator(
-      address: await wbtcEthOracleProxyContract.aggregator(),
-      client: _web3service.web3Client,
-      chainId: _web3service.chainId,
-    );
-
-    /// setup USDC/ETH price oracle contract
-    usdcEthAggregator = Chainlink_token_eth_price_aggregator(
-      address: await usdcEthOracleProxyContract.aggregator(),
-      client: _web3service.web3Client,
-      chainId: _web3service.chainId,
-    );
-
-    /// setup ETH/USD price oracle contract
-    ethUsdAggregator = Chainlink_token_usd_price_aggregator(
-      address: await ethUsdOracleProxyContract.aggregator(),
-      client: _web3service.web3Client,
-      chainId: _web3service.chainId,
-    );
-
-    // /// setup AVAX/ETH price oracle contract
-    // avaxEthOracleProxyContract = Chainlink_token_eth_price_aggregator(
-    //   address: _config.avaxEthOracleContractAddress,
-    //   client: _web3service.web3Client,
-    //   chainId: _web3service.chainId,
-    // );
-
-    // /// setup MATIC/ETH price oracle contract
-    // maticEthOracleProxyContract = Chainlink_token_eth_price_aggregator(
-    //   address: _config.maticEthOracleContractAddress,
-    //   client: _web3service.web3Client,
-    //   chainId: _web3service.chainId,
-    // );
   }
 
-  _setupPriceFeed() async {
-    log.i('_setupPriceFeed');
-// TODO: loop for all known tokens
+  /// Setup token/USD aggregator using aggregator proxy contract address.
+  ///
+  /// Returns a chainlink price aggregator interface for the specified token.
+  Future<Chainlink_token_usd_price_aggregator> setupEthUsdAggregatorViaProxy(
+      {required EthereumAddress aggregatorProxyAddress}) async {
     try {
-      /// get aggregator contract address for DAI/ETH pair.
-      final EthereumAddress daiEthAggregatorContractAddress =
-          await feedRegistryContract.getFeed(token.daiTokenContractAddress,
-              EthereumAddress.fromHex(_config.denominationEth));
-      log.d(
-          'DAI/Eth aggregator contract address: $daiEthAggregatorContractAddress');
-
-      /// setup aggregator contract
-      daiEthAggregator = Chainlink_token_eth_price_aggregator(
-        address: daiEthAggregatorContractAddress,
+      /// setup token/ETH price oracle contract
+      tokenAggregatorProxyContract = Chainlink_aggregator_proxy(
+        address: aggregatorProxyAddress,
         client: _web3service.web3Client,
         chainId: _web3service.chainId,
       );
+      final EthereumAddress _aggregatorAddress =
+          await tokenAggregatorProxyContract.aggregator();
 
-      // daiEthAnswerUpdatedEvent = daiEthAggregator.self.event('AnswerUpdated');
-      pare.complete(true);
+      return tokenUsdAggregator = Chainlink_token_usd_price_aggregator(
+        address: _aggregatorAddress,
+        client: _web3service.web3Client,
+        chainId: _web3service.chainId,
+      );
     } catch (e) {
-      log.e('error setting up aggregator: $e');
+      log.e('error setting up aggregator using proxy address: $e');
+      throw 'error setting up aggregator using proxy address';
+    }
+  }
+
+  /// Setup token/ETH aggregator using aggregator proxy contract address.
+  ///
+  /// Returns a chainlink price aggregatorinterface for the specified token.
+  Future<Chainlink_token_eth_price_aggregator> setupAggregatorViaProxy(
+      {required EthereumAddress aggregatorProxyAddress}) async {
+    try {
+      /// setup token/ETH price oracle contract
+      tokenAggregatorProxyContract = Chainlink_aggregator_proxy(
+        address: aggregatorProxyAddress,
+        client: _web3service.web3Client,
+        chainId: _web3service.chainId,
+      );
+      final EthereumAddress _aggregatorAddress =
+          await tokenAggregatorProxyContract.aggregator();
+
+      return _setupAggregator(aggregatorAddress: _aggregatorAddress);
+    } catch (e) {
+      log.e('error setting up aggregator using proxy address: $e');
+      throw 'error setting up aggregator using proxy address';
+    }
+  }
+
+  Future<Chainlink_token_eth_price_aggregator> setupPriceFeed({
+    required AaveReserveData tokenData,
+    required EthereumAddress denomination,
+  }) async {
+    log.i(
+        '_setupPriceFeed | tokenData: $tokenData, denomination: $denomination');
+
+    try {
+      late EthereumAddress tokenDenominatorAggregatorContractAddress;
+
+      /// get aggregator contract address for token pair.
+      switch (tokenData.assetSymbol) {
+        case 'WBTC':
+          tokenDenominatorAggregatorContractAddress =
+              await feedRegistryContract.getFeed(
+            EthereumAddress.fromHex(_config.denominationBtc),
+            denomination,
+          );
+
+          break;
+        case 'WETH':
+          tokenDenominatorAggregatorContractAddress =
+              await feedRegistryContract.getFeed(
+            EthereumAddress.fromHex(_config.denominationEth),
+            EthereumAddress.fromHex(_config.denominationUSD),
+          );
+
+          break;
+        default:
+          tokenDenominatorAggregatorContractAddress =
+              await feedRegistryContract.getFeed(
+            EthereumAddress.fromHex(tokenData.assetAddress),
+            denomination,
+          );
+      }
+
+      final _tokenAggregator = _setupAggregator(
+          aggregatorAddress: tokenDenominatorAggregatorContractAddress);
+      return _tokenAggregator;
+    } catch (e) {
+      log.e('Error setting up aggregator: $e');
+      throw 'Error with price feed setup';
     }
   }
 }
