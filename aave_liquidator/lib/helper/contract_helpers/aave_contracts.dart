@@ -11,7 +11,6 @@ import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('AaveContracts');
 
-//TODO: the events cannot be listenned to, because the proxy address is being used. Can only listen on actual event emiting contract
 class AaveContracts {
   AaveContracts(Web3Service web3, Config config) {
     _web3service = web3;

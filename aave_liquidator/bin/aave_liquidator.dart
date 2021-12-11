@@ -27,7 +27,7 @@ void main() async {
   load();
 
   // int _userSelection = requireNetworkSelection();
-  int _userSelection = 1;
+  int _userSelection = 2;
   var _selectedNetwork = DeployedNetwork.values[_userSelection];
 
   print('running app using $_selectedNetwork');

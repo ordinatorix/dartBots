@@ -341,8 +341,8 @@ class ChainLinkPriceOracle {
       }
     });
 
-    BigInt updatedLiquidationTreshold =
-        BigInt.from(numeratorSum / calculatedCollateralETH);
+    // BigInt updatedLiquidationTreshold =
+    //     BigInt.from(numeratorSum / calculatedCollateralETH);
 
     BigInt updatedHealthFactor = BigInt.from(
       BigInt.from(numeratorSum / userAccountData.totalDebtETH) /

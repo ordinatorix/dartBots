@@ -131,8 +131,7 @@ class AaveReserveManager {
     //TODO: review this
     try {
       final List<EthereumAddress> _reserveList = await getAaveReserveList();
-      final List<BigInt> _assetsPrice =
-          await getAllReserveAssetPrice(_reserveList);
+      
 
       for (var asset in _reserveList) {
         final res = await getAaveReserveConfigurationData(asset: asset);

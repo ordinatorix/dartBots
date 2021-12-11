@@ -100,7 +100,6 @@ class AaveUserManager {
       );
       if (_userReserves['collateral'] != null) {
         for (final collateral in _userReserves['collateral']!) {
-          //TODO: make sure value is not null
           GetUserReserveData userReserveData = await _aaveContracts
               .protocolDataProviderContract
               .getUserReserveData(
