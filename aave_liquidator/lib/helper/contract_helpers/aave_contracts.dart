@@ -11,6 +11,7 @@ import 'package:web3dart/web3dart.dart';
 
 final log = getLogger('AaveContracts');
 
+//TODO: the events cannot be listenned to, because the proxy address is being used. Can only listen on actual event emiting contract
 class AaveContracts {
   AaveContracts(Web3Service web3, Config config) {
     _web3service = web3;
@@ -20,7 +21,7 @@ class AaveContracts {
 
   final pare = Completer<bool>();
   Future<bool> get isReady => pare.future;
-  
+
   late Config _config;
   late Web3Service _web3service;
   late Aave_lending_pool_address_provider aaveAddressProviderContract;
@@ -40,33 +41,45 @@ class AaveContracts {
   late EthereumAddress protocolDataProviderAdress;
   late EthereumAddress priceOracleAddress;
 
+  /// Setup aave address provider contract.
   _setupAddressProviderContract() async {
+    /// get lending pool address provider contract.
     aaveAddressProviderContract = Aave_lending_pool_address_provider(
         address: _config.lendingPoolAddressProviderContractAddress,
         client: _web3service.web3Client,
         chainId: _web3service.chainId);
 
+    /// get lending pool proxy address.
     lendingPoolProxyAddress =
         await aaveAddressProviderContract.getLendingPool();
+
+    /// get protocol data provider address.
     protocolDataProviderAdress = _config
         .protocolDataProviderContractAddress; // await aaveAddressProviderContract.getAddress(0x1);
+
+    /// Get aave price oracle address.
     priceOracleAddress = await aaveAddressProviderContract.getPriceOracle();
+
     _setupContracts();
     pare.complete(true);
   }
 
   _setupContracts() {
     log.v('lending Pool Address: $lendingPoolProxyAddress');
+
+    /// Setup Aave lending pool contract.
     lendingPoolContract = Aave_lending_pool(
         address: lendingPoolProxyAddress,
         client: _web3service.web3Client,
         chainId: _web3service.chainId);
 
+    /// setup aave protocol data provider contract.
     protocolDataProviderContract = Aave_protocol_data_provider(
         address: protocolDataProviderAdress,
         client: _web3service.web3Client,
         chainId: _web3service.chainId);
 
+    /// setup aave price oracle contract.
     aavePriceProvider = Aave_price_oracle(
         address: priceOracleAddress, // _config.aavePriceOracleContractAddress,
         client: _web3service.web3Client,
