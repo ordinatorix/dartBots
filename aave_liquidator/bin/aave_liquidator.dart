@@ -2,7 +2,7 @@ import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/contract_interface/aave_lending_pool_event_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_reserve_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_user_manager.dart';
-import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
+import 'package:aave_liquidator/contract_interface/chain_link_price_oracle.dart';
 import 'package:aave_liquidator/helper/contract_helpers/liquidator_contract.dart';
 import 'package:aave_liquidator/enums/deployed_networks.dart';
 import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';

@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:aave_liquidator/abi/chainlink_abi/aggregator_abi/chainlink_aggregator_proxy.g.dart';
 import 'package:aave_liquidator/abi/chainlink_abi/aggregator_abi/chainlink_token_usd_price_aggregator.g.dart';
-import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
+import 'package:aave_liquidator/contract_interface/chain_link_price_oracle.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
 
 import 'package:web3dart/web3dart.dart';
