@@ -267,7 +267,7 @@ class ChainLinkPriceOracle {
       /// returns list of [AaveUserAccountData] with the calculated HF
       List<AaveUserAccountData> newData = _userAccountDataList
           .map(
-            (userAcount) => _calculateUsersHealthFactor(
+            (userAcount) => _calculateUserHealthFactor(
                 userAccountData: userAcount,
                 reserveDataList: reserveList,
                 currentTokenAddress: tokenAddress,
@@ -285,20 +285,20 @@ class ChainLinkPriceOracle {
   /// Calculate user health factor using new price.
   ///
   /// The formula used can be found => https://docs.aave.com/risk/asset-risk/risk-parameters#health-factor
-  AaveUserAccountData _calculateUsersHealthFactor({
+  AaveUserAccountData _calculateUserHealthFactor({
     required AaveUserAccountData userAccountData,
     required List<AaveReserveData> reserveDataList,
     required String currentTokenAddress,
     required BigInt currentPrice,
   }) {
     log.i(
-        'calculateUsersHealthFactor | userAddress: ${userAccountData.userAddress}');
+        'calculateUserHealthFactor | userAddress: ${userAccountData.userAddress}');
 
     BigInt numeratorSum = BigInt.zero;
 
     BigInt calculatedCollateralETH = BigInt.zero;
 
-    /// calculate the sum of each numerator
+    /// calculate the sum of each liquidatable collateral
     userAccountData.collateralReserve
         .forEach((collateralAddress, collateralAmount) {
       /// get the reserve data for each reserve user is using as collateral.
