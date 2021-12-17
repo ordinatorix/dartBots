@@ -2,7 +2,7 @@ import 'package:aave_liquidator/configs/config.dart';
 import 'package:aave_liquidator/contract_interface/aave_lending_pool_event_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_reserve_manager.dart';
 import 'package:aave_liquidator/contract_interface/aave_user_manager.dart';
-import 'package:aave_liquidator/contract_interface/chain_link_interface.dart';
+import 'package:aave_liquidator/contract_interface/chain_link_price_oracle.dart';
 import 'package:aave_liquidator/helper/contract_helpers/liquidator_contract.dart';
 import 'package:aave_liquidator/enums/deployed_networks.dart';
 import 'package:aave_liquidator/helper/contract_helpers/aave_contracts.dart';
@@ -10,7 +10,7 @@ import 'package:aave_liquidator/helper/network_prompt.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
-
+import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:dotenv/dotenv.dart';
@@ -20,7 +20,7 @@ import 'package:web3dart/web3dart.dart';
 final log = getLogger('main');
 void main() async {
   /// set debug level
-  Logger.level = Level.debug;
+  Logger.level = Level.verbose;
   log.v('Success, We\'re In!');
 
   /// Load env
@@ -59,15 +59,6 @@ void main() async {
     aaveContracts: _aaveContracts,
   );
 
-  /// setup price oracle.
-  final ChainLinkPriceOracle _oracle = ChainLinkPriceOracle(
-    web3: _web3,
-    config: _config,
-    mongod: _mongodService,
-    liquidatorContract: _liquidatorContract,
-    network: _selectedNetwork,
-  );
-
   final AaveReserveManager _reserveManager = AaveReserveManager(
     mongod: _mongodService,
     aaveContracts: _aaveContracts,
@@ -77,6 +68,15 @@ void main() async {
     config: _config,
     mongod: _mongodService,
     aaveContracts: _aaveContracts,
+  );
+
+  /// setup price oracle.
+  final ChainLinkPriceOracle _oracle = ChainLinkPriceOracle(
+    web3: _web3,
+    config: _config,
+    mongod: _mongodService,
+    liquidatorContract: _liquidatorContract,
+    network: _selectedNetwork,
   );
 
   final AaveLendingPoolEventManager _lendingPoolEventManager =
@@ -90,7 +90,7 @@ void main() async {
   /// This is a scheduled task to update reserve data periodically
   /// TODO: create 24hr cron repeat interval.
 
-  _pollReserveData() async {
+  Future<List<AaveReserveData>> _pollReserveData() async {
     //TODO: move this to own poller file
     log.i('_pollReserveData');
     try {
@@ -157,12 +157,14 @@ void main() async {
       /// update db with new reserve data.
       final reset = await _mongodService.resetReserveData(reserveDataList);
       log.v('done updating db with reserve: $reset');
+      return reserveDataList;
     } catch (e) {
       log.e('error polling: $e');
+      throw 'could not poll reserve';
     }
   }
 
-  await _pollReserveData();
+  List<AaveReserveData> _reserveList = await _pollReserveData();
 
   /// Poll Aave for new users
   ///
@@ -175,7 +177,7 @@ void main() async {
       final _currentBlock = await _web3.getCurrentBlock();
 
       List<AaveBorrowEvent> _borrowEvents = [];
-      final startingBlock = _currentBlock - 15000; //12341000;
+      final startingBlock = _currentBlock - 500; //15000;
       final increment = 2000;
       for (var i = startingBlock; i <= _currentBlock; i += increment) {
         final _fromBlock = i;
@@ -197,10 +199,19 @@ void main() async {
 
   await _pollNewUsers();
 
+// // a decrease in DAI
+//   List<AaveUserAccountData> tokenUsers = await _oracle.getTokenUser(
+//     tokenAddress: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+//     tokenPrice: BigInt.parse('375801656470'),
+//     oldTokenPrice: BigInt.parse('375801656477'),
+//     reserveList: _reserveList,
+//   );
+
   /// For every asset available on aave.
   /// Listen for price changes.
   ///
   await _oracle.priceListener();
+
 //TODO: proper shutdown.
   /// Terminate all conections
   _web3.dispose();

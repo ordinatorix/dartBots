@@ -93,8 +93,6 @@ class Config {
     aggregatorAddress = local_net.aggregator;
   }
 
-  // /// Token Symbol
-  final String ethToken = 'ETH';
   final String denominationEth = '0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE';
   final String denominationBtc = '0xbBbBBBBbbBBBbbbBbbBbbbbBBbBbbbbBbBbbBBbB';
 

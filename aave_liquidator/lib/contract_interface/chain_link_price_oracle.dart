@@ -23,6 +23,7 @@ class ChainLinkPriceOracle {
   late MongodService _mongodService;
   late ChainlinkContracts _chainlinkContracts;
   late LiquidatorContract _liquidatorContract;
+
   late DeployedNetwork _network;
   late Web3Service _web3service;
 
@@ -42,6 +43,7 @@ class ChainLinkPriceOracle {
     );
 
     _liquidatorContract = liquidatorContract;
+
     _network = network;
   }
   late List<AaveReserveData> _reserveList;
@@ -87,7 +89,7 @@ class ChainLinkPriceOracle {
             default:
               if (_config.aggregatorAddress
                   .containsKey('${asset.assetSymbol}/ETH')) {
-                /// Start listening for DAI price update.
+                /// Start listening for token price update using known aggregator.
                 await _listenForPriceUpdate(
                     tokenData: asset,
                     aggregatorProxyAddress:
@@ -154,7 +156,7 @@ class ChainLinkPriceOracle {
       late Chainlink_token_eth_price_aggregator _tokenAggregator;
 
       /// get previous price of asset.
-      BigInt _oldTokenPrice = tokenData.assetPrice;
+      BigInt _oldTokenPrice = tokenData.aaveAssetPrice;
 
       if (aggregatorProxyAddress != null) {
         /// Setup price aggregator via proxy contract
@@ -190,17 +192,20 @@ class ChainLinkPriceOracle {
     log.w('old price of ${tokenData.assetSymbol} in eth $lastPrice');
     log.w('new price of ${tokenData.assetSymbol} in eth $newPrice');
 
-    List<AaveUserAccountData> tokenUsers = await _getTokenUser(
+    List<AaveUserAccountData> tokenUsers = await getTokenUser(
       tokenAddress: tokenData.assetAddress,
       tokenPrice: newPrice,
       oldTokenPrice: lastPrice,
       reserveList: _reserveList,
     );
 
-    List<AaveUserAccountData> liquidatableUserList = tokenUsers
-        .where((user) =>
-            BigInt.parse(user.generatedHealthFactor) < BigInt.from(10000))
-        .toList();
+    List<AaveUserAccountData> liquidatableUserList = tokenUsers.isNotEmpty
+        ? tokenUsers
+            .where((user) =>
+                BigInt.parse(user.generatedHealthFactor) <
+                BigInt.from(10000)) //TODO: fix decimals here.
+            .toList()
+        : [];
 
     log.w('liquidatable Users: $liquidatableUserList');
 
@@ -234,14 +239,17 @@ class ChainLinkPriceOracle {
       // }
     }
 
-    ///TODO: update price in db
+    ///TODO: update reserve price in db.
+    ///TODO: get useraccount data ?
     ///
   }
 
   /// Get list of users using specific Token.
   ///
   /// Returns list of user account holding token as either debt or collateral.
-  Future<List<AaveUserAccountData>> _getTokenUser({
+  ///
+  /// TODO: on every price update I should also get the users using ETH as the opposite reserve type, since all prices are denominated by ETH.
+  Future<List<AaveUserAccountData>> getTokenUser({
     required String tokenAddress,
     required BigInt tokenPrice,
     required BigInt oldTokenPrice,
@@ -265,15 +273,17 @@ class ChainLinkPriceOracle {
       /// Calculate healthfactor based on new price.
       ///
       /// returns list of [AaveUserAccountData] with the calculated HF
-      List<AaveUserAccountData> newData = _userAccountDataList
-          .map(
-            (userAcount) => _calculateUsersHealthFactor(
-                userAccountData: userAcount,
-                reserveDataList: reserveList,
-                currentTokenAddress: tokenAddress,
-                currentPrice: tokenPrice),
-          )
-          .toList();
+      List<AaveUserAccountData> newData = _userAccountDataList.isNotEmpty
+          ? _userAccountDataList
+              .map(
+                (userAcount) => _calculateUserHealthFactor(
+                    userAccountData: userAcount,
+                    reserveDataList: reserveList,
+                    currentTokenAddress: tokenAddress,
+                    currentPrice: tokenPrice),
+              )
+              .toList()
+          : [];
 
       return newData;
     } catch (e) {
@@ -285,20 +295,20 @@ class ChainLinkPriceOracle {
   /// Calculate user health factor using new price.
   ///
   /// The formula used can be found => https://docs.aave.com/risk/asset-risk/risk-parameters#health-factor
-  AaveUserAccountData _calculateUsersHealthFactor({
+  ///
+  /// TODO: this logic does not work for ∆ in eth/usd price.
+  AaveUserAccountData _calculateUserHealthFactor({
     required AaveUserAccountData userAccountData,
     required List<AaveReserveData> reserveDataList,
     required String currentTokenAddress,
     required BigInt currentPrice,
   }) {
     log.i(
-        'calculateUsersHealthFactor | userAddress: ${userAccountData.userAddress}');
+        'calculateUserHealthFactor | userAddress: ${userAccountData.userAddress}');
 
     BigInt numeratorSum = BigInt.zero;
 
-    BigInt calculatedCollateralETH = BigInt.zero;
-
-    /// calculate the sum of each numerator
+    /// calculate the sum of each liquidatable collateral
     userAccountData.collateralReserve
         .forEach((collateralAddress, collateralAmount) {
       /// get the reserve data for each reserve user is using as collateral.
@@ -320,35 +330,42 @@ class ChainLinkPriceOracle {
 
       /// use the updated price on the asset that triggered a price change.
       if (collateralAddress == currentTokenAddress) {
+        if (_currentReserveData.assetSymbol == 'WETH') {
+          /// if WETH ∆ price, set the current price to 1.0 to calculated the new health factor.
+          log.w(
+              'token is WETH:${_currentReserveData.assetSymbol}, using aave default price: ${_currentReserveData.aaveAssetPrice} as current price');
+          currentPrice = _currentReserveData.aaveAssetPrice;
+        }
         BigInt tokenVal = factoredCollateralAmount * currentPrice;
 
-        calculatedCollateralETH = calculatedCollateralETH + tokenVal;
-
-        BigInt sumOfIt = tokenVal * _collateralLiqThresh; //* BigInt.from(0.01);
+        BigInt sumOfIt = BigInt.from((tokenVal * _collateralLiqThresh) /
+            BigInt.from(10).pow(
+                4)); // * 10^(-4) to account for liquidation threshold decimals
         numeratorSum = numeratorSum + sumOfIt;
       } else {
         /// otherwise use the known price.
-        BigInt _collateralPrice = _currentReserveData.assetPrice;
+        BigInt _collateralPrice = _currentReserveData.aaveAssetPrice;
 
         BigInt tokenVal = factoredCollateralAmount * _collateralPrice;
 
-        calculatedCollateralETH = calculatedCollateralETH + tokenVal;
-        BigInt sumOfIt = tokenVal * _collateralLiqThresh; //* BigInt.from(0.01);
+        BigInt sumOfIt = BigInt.from((tokenVal * _collateralLiqThresh) /
+            BigInt.from(10).pow(
+                4)); // * 10^(-4) to account for liquidation threshold decimals
         numeratorSum = numeratorSum + sumOfIt;
       }
     });
 
-    // BigInt updatedLiquidationTreshold =
-    //     BigInt.from(numeratorSum / calculatedCollateralETH);
-
-    BigInt updatedHealthFactor = BigInt.from(
-      BigInt.from(numeratorSum / userAccountData.totalDebtETH) /
-          BigInt.from(10).pow(18),
-    );
+    BigInt updatedHealthFactor =
+        BigInt.from(numeratorSum / userAccountData.totalDebtETH);
 
     AaveUserAccountData calculatedUserData = userAccountData;
     calculatedUserData.generatedHealthFactor = updatedHealthFactor.toString();
     log.v('Calculated User Data: $calculatedUserData');
+    log.w(calculatedUserData.healthFactor);
+    log.w(BigInt.parse(calculatedUserData.generatedHealthFactor));
+    log.wtf(
+        'HF decreased?: ${calculatedUserData.healthFactor > BigInt.parse(calculatedUserData.generatedHealthFactor)}');
+
     return calculatedUserData;
   }
 
