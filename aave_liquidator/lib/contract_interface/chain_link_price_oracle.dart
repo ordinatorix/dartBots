@@ -203,40 +203,62 @@ class ChainLinkPriceOracle {
         ? tokenUsers
             .where((user) =>
                 BigInt.parse(user.generatedHealthFactor) <
-                BigInt.from(10000)) //TODO: fix decimals here.
+                BigInt.from(1000000000000000000))
             .toList()
         : [];
 
-    log.w('liquidatable Users: $liquidatableUserList');
+    // log.w('liquidatable Users: $liquidatableUserList');
+    if (liquidatableUserList.isNotEmpty) {
+      if (lastPrice < newPrice) {
+        log.v('price increased');
 
-    if (lastPrice < newPrice) {
-      log.v('price increased');
-      // price increased; liquidate user with token as debt.
-      log.w('Should liquidate users using ${tokenData.assetSymbol} as debt');
-      // for (AaveUserAccountData liquidatableUser in liquidatableUserList) {
-      //   await _liquidatorContract.liquidateAaveUser(
-      //     collateralAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-      //     debtAsset: _daiTokenAddress,
-      //     user: liquidatableUser.userAddress,
-      //     debtToCover: liquidatableUser.variableDebtReserve[_daiTokenAddress],
-      //     useEthPath: false,
-      //   );
-      // }
-    } else {
-      log.v('price decreased');
-      // price decrease; liquidate user with token as collateral.
-      log.w(
-          'Should liquidate users using ${tokenData.assetSymbol} as collateral');
-      // for (AaveUserAccountData liquidatableUser in liquidatableUserList) {
-      //   await _liquidatorContract.liquidateAaveUser(
-      //     collateralAsset: _daiTokenAddress,
-      //     debtAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
-      //     user: liquidatableUser.userAddress,
-      //     debtToCover: liquidatableUser.variableDebtReserve[
-      //         '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'],
-      //     useEthPath: false,
-      //   );
-      // }
+        /// price increased; liquidate user with token as debt.
+        log.w('Should liquidate users using ${tokenData.assetSymbol} as debt');
+        for (AaveUserAccountData liquidatableUser in liquidatableUserList) {
+          ///find the asset with the highest amount.
+          List valList = [];
+
+          liquidatableUser.collateralReserve.forEach((key, value) {
+            valList.add(value);
+          });
+          valList.sort();
+          liquidatableUser.collateralReserve.removeWhere(
+              (key, value) => BigInt.parse(value) < BigInt.parse(valList.last));
+          var colAss = liquidatableUser.collateralReserve.keys.first;
+          log.wtf('colAss = $colAss');
+          // await _liquidatorContract.liquidateAaveUser(
+          //   collateralAsset: liquidatableUser.collateralReserve.keys.first,
+          //   debtAsset: tokenData.assetAddress,
+          //   user: liquidatableUser.userAddress,
+          //   debtToCover:
+          //       liquidatableUser.variableDebtReserve[tokenData.assetAddress],
+          // );
+        }
+      } else {
+        log.v('price decreased');
+        // price decrease; liquidate user with token as collateral.
+        log.w(
+            'Should liquidate users using ${tokenData.assetSymbol} as collateral');
+        for (AaveUserAccountData liquidatableUser in liquidatableUserList) {
+          List valList = [];
+          liquidatableUser.variableDebtReserve.forEach((key, value) {
+            valList.add(value);
+          });
+          valList.sort();
+          liquidatableUser.variableDebtReserve.removeWhere(
+              (key, value) => BigInt.parse(value) < BigInt.parse(valList.last));
+          var debtAss = liquidatableUser.collateralReserve.keys.first;
+          log.wtf('debtAss = $debtAss');
+
+          // await _liquidatorContract.liquidateAaveUser(
+          //   collateralAsset: tokenData.assetAddress,
+          //   debtAsset: '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2',
+          //   user: liquidatableUser.userAddress,
+          //   debtToCover: liquidatableUser.variableDebtReserve[
+          //       '0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2'],
+          // );
+        }
+      }
     }
 
     ///TODO: update reserve price in db.
