@@ -2,7 +2,7 @@
 
 - Run mongo database
 ```
-mongod --dpath <path_to_db>/data/db
+mongod --dbpath <path_to_db>/data/db
 ```
 - check if db is running:
 ```
