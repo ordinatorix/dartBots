@@ -10,7 +10,7 @@ import 'package:aave_liquidator/helper/network_prompt.dart';
 import 'package:aave_liquidator/logger.dart';
 import 'package:aave_liquidator/model/aave_borrow_event.dart';
 import 'package:aave_liquidator/model/aave_reserve_model.dart';
-import 'package:aave_liquidator/model/aave_user_account_data.dart';
+// import 'package:aave_liquidator/model/aave_user_account_data.dart';
 import 'package:aave_liquidator/services/mongod_service.dart';
 import 'package:aave_liquidator/services/web3_service.dart';
 import 'package:dotenv/dotenv.dart';
@@ -20,7 +20,7 @@ import 'package:web3dart/web3dart.dart';
 final log = getLogger('main');
 void main() async {
   /// set debug level
-  Logger.level = Level.verbose;
+  Logger.level = Level.debug;
   log.v('Success, We\'re In!');
 
   /// Load env
@@ -177,7 +177,7 @@ void main() async {
       final _currentBlock = await _web3.getCurrentBlock();
 
       List<AaveBorrowEvent> _borrowEvents = [];
-      final startingBlock = _currentBlock - 500; //15000;
+      final startingBlock = _currentBlock - 25000;
       final increment = 2000;
       for (var i = startingBlock; i <= _currentBlock; i += increment) {
         final _fromBlock = i;
