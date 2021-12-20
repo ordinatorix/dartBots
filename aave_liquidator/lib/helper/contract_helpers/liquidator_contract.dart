@@ -40,9 +40,10 @@ class LiquidatorContract {
     required String debtAsset,
     required String user,
     required BigInt debtToCover,
-    required bool useEthPath,
+    bool? useEthPath = true,
   }) async {
-    log.i('liquidateAaveUser | ');
+    log.i(
+        'liquidateAaveUser | collateralAsset: $collateralAsset, debtAsset: $debtAsset, user: $user, debtToCover: $debtToCover ');
     try {
       // encode parameters given to liquidator executeOperation function
       final parametres =
